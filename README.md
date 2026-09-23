@@ -12,4 +12,18 @@ _Coming in Phase 6 once the CLI and pytest plugin are implemented._
 
 ## Development setup
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Prerequisites:
+
+- [Poetry](https://python-poetry.org/docs/#installation) — dependency management
+- [Ollama](https://ollama.com) — local, $0-cost LLM judge (required for the live eval suite; unit tests don't need it)
+  ```bash
+  ollama pull llama3.2:3b
+  ```
+
+```bash
+poetry install --extras deepeval
+poetry run pre-commit install
+make test
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full dev workflow.
