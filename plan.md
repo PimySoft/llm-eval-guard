@@ -53,9 +53,9 @@ Small upfront phase to prevent churn later — nail down the shape of the tool b
 Goal: a clean, reproducible, lint-enforced Python workspace that any contributor can bootstrap in under 5 minutes.
 
 ### 1.1 Repository setup
-- [ ] `git init`, create `main` as default branch
-- [ ] Add `.gitignore` (Python, Poetry, venv, `.env`, IDE folders, `__pycache__`, `.pytest_cache`, `.ruff_cache`, coverage artifacts)
-- [ ] Create base directory structure:
+- [x] `git init`, create `main` as default branch
+- [x] Add `.gitignore` (Python, Poetry, venv, `.env`, IDE folders, `__pycache__`, `.pytest_cache`, `.ruff_cache`, coverage artifacts)
+- [x] Create base directory structure:
   ```
   llm_eval_guard/        # source package
     core/                 # metric interfaces, config loader, runner
@@ -74,34 +74,34 @@ Goal: a clean, reproducible, lint-enforced Python workspace that any contributor
   .github/workflows/
   docs/
   ```
-- [ ] Add `LICENSE`, empty `README.md` placeholder, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`
-- [ ] Create initial commit
+- [x] Add `LICENSE`, empty `README.md` placeholder, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`
+- [x] Create initial commit
 
 ### 1.2 Dependency management
-- [ ] Choose Poetry (recommended over Pipenv for publishing to PyPI + better lockfile ergonomics) and run `poetry init`
-- [ ] Pin Python version support range (e.g., `>=3.10,<3.13`) in `pyproject.toml`
-- [ ] Add core runtime dependencies: `pydantic>=2`, `typer` or `click` (CLI), `pytest`, `rich` (console output)
-- [ ] Add evaluation dependencies as extras (`poetry add deepeval --group eval` or as optional extras so users can install `llm-eval-guard[ragas]` selectively)
-- [ ] Add dev-group dependencies: `ruff`, `pre-commit`, `mypy`, `pytest-cov`, `pytest-asyncio`, `pytest-mock`
-- [ ] Generate `poetry.lock`, commit both files
-- [ ] Verify `poetry install` works in a clean venv/container
+- [x] Choose Poetry (recommended over Pipenv for publishing to PyPI + better lockfile ergonomics) and run `poetry init`
+- [x] Pin Python version support range (e.g., `>=3.10,<3.13`) in `pyproject.toml`
+- [x] Add core runtime dependencies: `pydantic>=2`, `typer` or `click` (CLI), `pytest`, `rich` (console output)
+- [x] Add evaluation dependencies as extras (`poetry add deepeval --group eval` or as optional extras so users can install `llm-eval-guard[ragas]` selectively)
+- [x] Add dev-group dependencies: `ruff`, `pre-commit`, `mypy`, `pytest-cov`, `pytest-asyncio`, `pytest-mock`
+- [x] Generate `poetry.lock`, commit both files
+- [x] Verify `poetry install` works in a clean venv/container
 
 ### 1.3 Linting, formatting, type checking
-- [ ] Configure Ruff in `pyproject.toml` (`[tool.ruff]`): enable `E, F, I, UP, B, SIM` rule sets, set line length, target Python version
-- [ ] Configure Ruff formatter (replaces Black) — `[tool.ruff.format]`
-- [ ] Configure `mypy` (`[tool.mypy]`) — strict mode on `llm_eval_guard/`, relaxed on `tests/`
-- [ ] Add `Makefile` or `justfile` with shortcuts: `make lint`, `make format`, `make typecheck`, `make test`
+- [x] Configure Ruff in `pyproject.toml` (`[tool.ruff]`): enable `E, F, I, UP, B, SIM` rule sets, set line length, target Python version
+- [x] Configure Ruff formatter (replaces Black) — `[tool.ruff.format]`
+- [x] Configure `mypy` (`[tool.mypy]`) — strict mode on `llm_eval_guard/`, relaxed on `tests/`
+- [x] Add `Makefile` or `justfile` with shortcuts: `make lint`, `make format`, `make typecheck`, `make test`
 
 ### 1.4 Pre-commit hooks
-- [ ] Add `.pre-commit-config.yaml` with hooks: `ruff` (lint + format), `ruff-format`, `mypy` (local hook or mirror), `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-added-large-files`, `detect-private-key`
-- [ ] Run `pre-commit install` and document it in `CONTRIBUTING.md`
-- [ ] Run `pre-commit run --all-files` once to confirm a clean baseline
+- [x] Add `.pre-commit-config.yaml` with hooks: `ruff` (lint + format), `ruff-format`, `mypy` (local hook or mirror), `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-added-large-files`, `detect-private-key`
+- [x] Run `pre-commit install` and document it in `CONTRIBUTING.md`
+- [x] Run `pre-commit run --all-files` once to confirm a clean baseline
 
 ### 1.5 Local dev ergonomics
-- [ ] Add `.env.example` documenting env vars — `OLLAMA_BASE_URL` (default, required) plus optional/commented-out `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` for the bring-your-own-key path; never commit real `.env`
-- [ ] Document Ollama install + model pull (`ollama pull llama3.2:3b`) as a prerequisite in README setup, alongside Poetry
-- [ ] Add `.editorconfig`
-- [ ] Verify `pytest` runs (even with zero tests) with no config errors
+- [x] Add `.env.example` documenting env vars — `OLLAMA_BASE_URL` (default, required) plus optional/commented-out `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` for the bring-your-own-key path; never commit real `.env`
+- [x] Document Ollama install + model pull (`ollama pull llama3.2:3b`) as a prerequisite in README setup, alongside Poetry
+- [x] Add `.editorconfig`
+- [x] Verify `pytest` runs (even with zero tests) with no config errors
 
 **Definition of Done:** Fresh clone → `poetry install && pre-commit install && make test` succeeds with zero errors on an empty test suite. CI-ready baseline exists (even before Phase 5 wires CI).
 
