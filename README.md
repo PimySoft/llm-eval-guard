@@ -3,12 +3,18 @@
 > A CI/CD quality gate for LLM and RAG applications — scores outputs against quality, schema,
 > and security metrics, and fails a pull request when thresholds aren't met.
 
-Status: **Phase 2 (core metric framework) complete** — CLI not yet implemented. See
-[VISION.md](VISION.md) for the project charter and [plan.md](plan.md) for the build roadmap.
+Status: **Phases 1-3 complete** (metric framework, schema validation, prompt-drift testing, `leg`
+CLI) — security suite (Phase 4) not yet implemented. See [VISION.md](VISION.md) for the project
+charter and [plan.md](plan.md) for the build roadmap.
 
 ## Quickstart
 
-_The `leg` CLI is coming in Phase 3. For now, use the metric framework directly:_
+```bash
+leg run --suite quality --config leg.config.yaml   # full suite, scored by a local Ollama judge
+leg run --fast                                     # schema/prompt-drift checks only, no network
+```
+
+Or use the metric framework directly:
 
 ```python
 from llm_eval_guard.core import EvalCase

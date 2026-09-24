@@ -1,4 +1,4 @@
-.PHONY: lint format typecheck test install
+.PHONY: lint format typecheck test install run
 
 install:
 	poetry install --extras deepeval
@@ -14,3 +14,6 @@ typecheck:
 
 test:
 	poetry run pytest
+
+run:
+	poetry run leg run

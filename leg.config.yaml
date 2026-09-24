@@ -1,0 +1,20 @@
+# See docs/architecture.md (Phase 6) for the full reference; this is the repo's own dogfood
+# config, exercised by `leg run` / `leg run --fast` and tests/unit/test_cli.py.
+suites:
+  quality:
+    dataset: datasets/golden/sample_rag_qa.jsonl
+    metrics:
+      - name: faithfulness
+        threshold: 0.8
+      - name: answer_relevancy
+        threshold: 0.8
+
+  schema:
+    dataset: datasets/golden/sample_tool_calls.jsonl
+    metrics:
+      - name: "schema:llm_eval_guard.schema.models:ToolCallOutput"
+        fast: true
+
+judge:
+  model: qwen2.5:0.5b
+  base_url: http://localhost:11434

@@ -36,8 +36,8 @@ faithfulness regressions, broken output contracts, and prompt-injection exposure
 
 - [x] Metric-based LLM/RAG evaluation (faithfulness, answer relevancy) — Phase 2
 - [x] Judge calibration / meta-evaluation against human-labeled ground truth — Phase 2.6
-- [ ] Schema/contract testing for structured LLM output — Phase 3.1
-- [ ] Regression testing via prompt-drift snapshots — Phase 3.2
+- [x] Schema/contract testing for structured LLM output — Phase 3.1
+- [x] Regression testing via prompt-drift snapshots — Phase 3.2
 - [ ] Adversarial/red-team testing: prompt injection (direct + indirect), jailbreaks, PII, toxicity — Phase 4
 - [ ] CI quality gates with threshold enforcement and automated PR reporting — Phase 5
 
