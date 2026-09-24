@@ -37,3 +37,7 @@ coverage.xml
 
 # Ollama local model cache (never commit pulled models)
 .ollama/
+
+# leg run — judge-result cache (core/cache.py) and generated reports (--report-dir)
+.leg_cache/
+reports/

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from llm_eval_guard.core.cache import ResultCache
 from llm_eval_guard.core.config import LegConfig
 from llm_eval_guard.core.dataset import load_dataset_cases
 from llm_eval_guard.core.models import MetricResult
@@ -32,11 +33,16 @@ class SuiteRunResult:
         return [cr.result for cr in self.case_results]
 
 
-def run_suite(name: str, config: LegConfig, *, fast: bool = False) -> SuiteRunResult:
+def run_suite(
+    name: str, config: LegConfig, *, fast: bool = False, cache: ResultCache | None = None
+) -> SuiteRunResult:
     """Run every metric in suite `name` against its dataset.
 
     `fast=True` skips any `MetricConfig` not marked `fast: true` — this is what lets
     `leg run --fast` stay network-free (see plan.md Phase 3.3).
+
+    `cache`, when given, is consulted/populated only for non-`fast` (judge) metrics — see
+    core/cache.py for why fast/rule-based metrics skip it.
     """
     try:
         suite = config.suites[name]
@@ -50,14 +56,21 @@ def run_suite(name: str, config: LegConfig, *, fast: bool = False) -> SuiteRunRe
             continue
         metric = build_metric(metric_cfg, config.judge)
         for case in cases:
+            result: MetricResult | None = None
+            if cache is not None and not metric_cfg.fast:
+                result = cache.get(metric.name, case)
+            if result is None:
+                result = metric.evaluate(case)
+                if cache is not None and not metric_cfg.fast:
+                    cache.set(metric.name, case, result)
             case_results.append(
-                CaseResult(
-                    case_input=case.input, result=metric.evaluate(case), metadata=case.metadata
-                )
+                CaseResult(case_input=case.input, result=result, metadata=case.metadata)
             )
 
     return SuiteRunResult(suite_name=name, case_results=case_results)
 
 
-def run_all(config: LegConfig, *, fast: bool = False) -> list[SuiteRunResult]:
-    return [run_suite(name, config, fast=fast) for name in config.suites]
+def run_all(
+    config: LegConfig, *, fast: bool = False, cache: ResultCache | None = None
+) -> list[SuiteRunResult]:
+    return [run_suite(name, config, fast=fast, cache=cache) for name in config.suites]
