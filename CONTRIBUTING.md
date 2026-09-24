@@ -6,8 +6,8 @@ Solo portfolio project — kept lightweight, but run through the same checks CI 
 
 ```bash
 # 1. Install Poetry (https://python-poetry.org/docs/#installation) if you don't have it
-# 2. Install dependencies
-poetry install
+# 2. Install dependencies (incl. the deepeval extra)
+make install
 
 # 3. Install git hooks
 poetry run pre-commit install
@@ -17,8 +17,10 @@ make test
 ```
 
 Requires Python `>=3.10,<3.13`. Requires [Ollama](https://ollama.com) installed locally with a
-pulled model (`ollama pull llama3.2:3b`) to run the live judge-model test suite — unit tests do
-not need it.
+pulled model (`ollama pull qwen2.5:0.5b`, or set `LEG_JUDGE_MODEL` to use another one) to run the
+`live_llm`-marked judge-model tests — everything else auto-skips them and stays green without
+Ollama installed. Re-run `python scripts/calibrate_judge.py` after changing the judge model (see
+docs/judge-calibration.md).
 
 ## Common tasks
 
@@ -32,7 +34,7 @@ not need it.
 ## Adding a new metric adapter
 
 Implement `llm_eval_guard.core.metric.Metric` and normalize the underlying engine's result into
-`MetricResult`. See `llm_eval_guard/metrics/deepeval_adapter.py` once Phase 2 lands.
+`MetricResult`. See `llm_eval_guard/metrics/deepeval_adapter.py` for the reference implementation.
 
 ## Adding red-team content
 
