@@ -12,7 +12,7 @@ REPO_CONFIG = Path(__file__).parent.parent.parent / "leg.config.yaml"
 def test_load_config_parses_repo_config() -> None:
     config = load_config(REPO_CONFIG)
 
-    assert set(config.suites) == {"quality", "schema"}
+    assert set(config.suites) == {"quality", "schema", "security"}
     assert config.suites["quality"].dataset == "datasets/golden/sample_rag_qa.jsonl"
     assert config.suites["schema"].metrics[0].fast is True
     assert config.judge.model == "qwen2.5:0.5b"
@@ -21,6 +21,14 @@ def test_load_config_parses_repo_config() -> None:
 def test_load_config_missing_file_raises(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError):
         load_config(tmp_path / "nope.yaml")
+
+
+def test_load_config_parses_repo_security_suite_multi_dataset() -> None:
+    config = load_config(REPO_CONFIG)
+
+    assert "security" in config.suites
+    assert isinstance(config.suites["security"].dataset, list)
+    assert len(config.suites["security"].dataset) == 4
 
 
 def test_load_config_defaults_judge_when_omitted(tmp_path: Path) -> None:

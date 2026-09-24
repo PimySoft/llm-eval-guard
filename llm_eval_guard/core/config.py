@@ -27,7 +27,9 @@ class MetricConfig(BaseModel):
 
 
 class SuiteConfig(BaseModel):
-    dataset: str
+    # A single dataset path, or several concatenated in order — e.g. the `security` suite spans
+    # one JSONL file per attack category (see core/dataset.py's load_dataset_cases).
+    dataset: str | list[str]
     metrics: list[MetricConfig]
 
 

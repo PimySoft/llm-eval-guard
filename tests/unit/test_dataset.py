@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from llm_eval_guard.core.dataset import load_golden_dataset
+from llm_eval_guard.core.dataset import load_dataset_cases, load_golden_dataset
 
 SAMPLE_DATASET = Path(__file__).parent.parent.parent / "datasets" / "golden" / "sample_rag_qa.jsonl"
 
@@ -44,6 +44,26 @@ def test_load_golden_dataset_raises_clear_error_on_malformed_json(tmp_path) -> N
 
     with pytest.raises(ValueError, match="cases.jsonl:2"):
         load_golden_dataset(dataset_file)
+
+
+def test_load_dataset_cases_accepts_a_single_path(tmp_path) -> None:
+    dataset_file = tmp_path / "cases.jsonl"
+    dataset_file.write_text('{"input": "q1", "actual_output": "a1"}\n', encoding="utf-8")
+
+    cases = load_dataset_cases(dataset_file)
+
+    assert len(cases) == 1
+
+
+def test_load_dataset_cases_concatenates_multiple_paths_in_order(tmp_path) -> None:
+    first = tmp_path / "first.jsonl"
+    first.write_text('{"input": "q1", "actual_output": "a1"}\n', encoding="utf-8")
+    second = tmp_path / "second.jsonl"
+    second.write_text('{"input": "q2", "actual_output": "a2"}\n', encoding="utf-8")
+
+    cases = load_dataset_cases([first, second])
+
+    assert [c.input for c in cases] == ["q1", "q2"]
 
 
 def test_sample_rag_qa_dataset_loads_and_has_human_labels() -> None:

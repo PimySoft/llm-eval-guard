@@ -20,10 +20,14 @@ from llm_eval_guard.metrics.deepeval_adapter import (
     contextual_precision_metric,
     faithfulness_metric,
     judge_model,
+    toxicity_metric,
 )
 from llm_eval_guard.schema.validation import SchemaValidationMetric
+from llm_eval_guard.security.injection import ComplianceMetric, TaskCompletionMetric
+from llm_eval_guard.security.pii import PIILeakageMetric
 
 _JudgeMetricFactory = Callable[[float, Any], Metric]
+_RuleMetricFactory = Callable[[float], Metric]
 
 # Built-in LLM-judge metric factories. Whether a given leg.config.yaml entry runs under
 # `--fast` is config's call (MetricConfig.fast, see core/config.py), not this registry's — a
@@ -32,6 +36,24 @@ _JUDGE_METRICS: dict[str, _JudgeMetricFactory] = {
     "faithfulness": faithfulness_metric,
     "answer_relevancy": answer_relevancy_metric,
     "contextual_precision": contextual_precision_metric,
+    "toxicity": toxicity_metric,
+}
+
+# Per-metric default threshold, used only when a leg.config.yaml entry omits `threshold` — keyed
+# so a metric with different "good" semantics (e.g. toxicity) doesn't inherit an unrelated
+# metric's default.
+_JUDGE_DEFAULT_THRESHOLD: dict[str, float] = {
+    "faithfulness": 0.8,
+    "answer_relevancy": 0.8,
+    "contextual_precision": 0.8,
+    "toxicity": 0.5,
+}
+
+# Rule-based metrics: deterministic, no judge model needed (see llm_eval_guard/security/).
+_RULE_METRICS: dict[str, _RuleMetricFactory] = {
+    "compliance": ComplianceMetric,
+    "task_completion": TaskCompletionMetric,
+    "pii_leakage": PIILeakageMetric,
 }
 
 _SCHEMA_PREFIX = "schema:"
@@ -57,11 +79,16 @@ def build_metric(cfg: MetricConfig, judge: JudgeConfig) -> Metric:
         schema = _import_schema(cfg.name.removeprefix(_SCHEMA_PREFIX))
         return SchemaValidationMetric(schema, strict=True, threshold=cfg.threshold or 1.0)
 
+    rule_factory = _RULE_METRICS.get(cfg.name)
+    if rule_factory is not None:
+        return rule_factory(cfg.threshold if cfg.threshold is not None else 1.0)
+
     factory = _JUDGE_METRICS.get(cfg.name)
     if factory is None:
         raise ValueError(
-            f"unknown metric {cfg.name!r} — known: {sorted(_JUDGE_METRICS)}, "
+            f"unknown metric {cfg.name!r} — known: {sorted({*_JUDGE_METRICS, *_RULE_METRICS})}, "
             f"or '{_SCHEMA_PREFIX}module.path:ClassName'"
         )
+    threshold = cfg.threshold if cfg.threshold is not None else _JUDGE_DEFAULT_THRESHOLD[cfg.name]
     model = judge_model(judge.model, judge.base_url)
-    return factory(cfg.threshold or 0.8, model)
+    return factory(threshold, model)

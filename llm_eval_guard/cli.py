@@ -14,7 +14,7 @@ from rich.console import Console
 from rich.table import Table
 
 from llm_eval_guard.core.config import load_config
-from llm_eval_guard.core.runner import SuiteRunResult, run_all, run_suite
+from llm_eval_guard.core.runner import CaseResult, SuiteRunResult, run_all, run_suite
 
 app = typer.Typer(add_completion=False)
 console = Console()
@@ -31,8 +31,18 @@ def main() -> None:
     """
 
 
+_SECURITY_SUITE = "security"
+
+
 def _render_results(suite_results: list[SuiteRunResult]) -> bool:
-    """Print a Rich pass/fail table + summary; return True iff every result passed."""
+    """Print a Rich pass/fail table + summary; return True iff every result passed.
+
+    Security-suite failures are rendered distinctly from quality/schema ones (bold + a category/
+    severity label instead of a bare "fail") and called out again in their own summary line — a
+    security regression is a different kind of finding than a faithfulness score dipping under
+    threshold, and plan.md Phase 4.5 asks for that to be visually obvious, not just a row in a
+    shared table (full Markdown/JSON reporting is Phase 5).
+    """
     table = Table(title="leg run results")
     table.add_column("Suite")
     table.add_column("Metric")
@@ -43,14 +53,23 @@ def _render_results(suite_results: list[SuiteRunResult]) -> bool:
     all_passed = True
     total = 0
     passed = 0
+    security_failures: list[CaseResult] = []
     for suite_result in suite_results:
+        is_security = suite_result.suite_name == _SECURITY_SUITE
         for case_result in suite_result.case_results:
             total += 1
             result = case_result.result
             if result.passed:
                 passed += 1
+                result_label = "[green]pass[/green]"
             else:
                 all_passed = False
+                if is_security:
+                    security_failures.append(case_result)
+                    severity = case_result.metadata.get("severity", "unknown")
+                    result_label = f"[bold red]SECURITY FAIL ({severity})[/bold red]"
+                else:
+                    result_label = "[red]fail[/red]"
             case_label = (
                 case_result.case_input
                 if len(case_result.case_input) <= 60
@@ -61,7 +80,7 @@ def _render_results(suite_results: list[SuiteRunResult]) -> bool:
                 result.metric_name,
                 case_label,
                 f"{result.score:.2f}",
-                "[green]pass[/green]" if result.passed else "[red]fail[/red]",
+                result_label,
             )
 
     console.print(table)
@@ -71,6 +90,10 @@ def _render_results(suite_results: list[SuiteRunResult]) -> bool:
 
     summary_style = "green" if all_passed else "red"
     console.print(f"[{summary_style}]{passed}/{total} passed ({passed / total:.0%})[/]")
+    if security_failures:
+        console.print(
+            f"[bold red]⚠ {len(security_failures)} security finding(s) — blocking by default[/]"
+        )
     return all_passed
 
 

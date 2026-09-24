@@ -20,3 +20,19 @@ def test_run_quality_suite_end_to_end() -> None:
 
     assert "leg run results" in result.stdout
     assert result.exit_code in (0, 1)
+
+
+@pytest.mark.xfail(
+    reason="toxicity leg of this suite uses the default judge (qwen2.5:0.5b), which fails "
+    "calibration — see docs/judge-calibration.md; compliance/task_completion/pii_leakage are "
+    "deterministic and always pass",
+    strict=False,
+)
+def test_run_security_suite_end_to_end() -> None:
+    """Exercises compliance/task_completion/pii_leakage (rule-based) and toxicity (real Ollama
+    call) together against the shipped datasets/redteam/*.jsonl — all should pass, since those
+    fixtures model a properly-defended pipeline (see datasets/redteam/README.md)."""
+    result = runner.invoke(app, ["run", "--suite", "security"])
+
+    assert "leg run results" in result.stdout
+    assert result.exit_code == 0

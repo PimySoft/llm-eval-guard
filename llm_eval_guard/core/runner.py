@@ -2,20 +2,24 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 from llm_eval_guard.core.config import LegConfig
-from llm_eval_guard.core.dataset import load_golden_dataset
+from llm_eval_guard.core.dataset import load_dataset_cases
 from llm_eval_guard.core.models import MetricResult
 from llm_eval_guard.core.registry import build_metric
 
 
 @dataclass
 class CaseResult:
-    """One metric's result against one case, kept alongside the case's input for reporting."""
+    """One metric's result against one case, kept alongside the case's input/metadata for
+    reporting — e.g. the CLI reads `metadata["severity"]`/`metadata["attack_category"]` to set
+    off security-suite failures from quality ones (see plan.md Phase 4.5)."""
 
     case_input: str
     result: MetricResult
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -39,14 +43,18 @@ def run_suite(name: str, config: LegConfig, *, fast: bool = False) -> SuiteRunRe
     except KeyError:
         raise KeyError(f"unknown suite {name!r} — known: {sorted(config.suites)}") from None
 
-    cases = load_golden_dataset(suite.dataset)
+    cases = load_dataset_cases(suite.dataset)
     case_results: list[CaseResult] = []
     for metric_cfg in suite.metrics:
         if fast and not metric_cfg.fast:
             continue
         metric = build_metric(metric_cfg, config.judge)
         for case in cases:
-            case_results.append(CaseResult(case_input=case.input, result=metric.evaluate(case)))
+            case_results.append(
+                CaseResult(
+                    case_input=case.input, result=metric.evaluate(case), metadata=case.metadata
+                )
+            )
 
     return SuiteRunResult(suite_name=name, case_results=case_results)
 
