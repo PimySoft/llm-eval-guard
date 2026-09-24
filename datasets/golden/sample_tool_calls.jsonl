@@ -1,0 +1,5 @@
+{"input": "search for the weather in Boston", "actual_output": "{\"tool_name\": \"search\", \"arguments\": {\"query\": \"weather in Boston\"}, \"call_id\": \"call_1\"}", "metadata": {"note": "Clean ToolCallOutput payload."}}
+{"input": "check inventory for SKU 4021", "actual_output": "{\"tool_name\": \"lookup_inventory\", \"arguments\": {\"sku\": \"4021\"}, \"call_id\": \"call_2\"}", "metadata": {"note": "Clean ToolCallOutput payload."}}
+{"input": "cancel order 998", "actual_output": "{\"tool_name\": \"cancel_order\", \"arguments\": {\"order_id\": \"998\"}, \"call_id\": \"call_3\"}", "metadata": {"note": "Clean ToolCallOutput payload."}}
+{"input": "book a meeting room", "actual_output": "{\"tool_name\": \"book_room\", \"arguments\": {\"room\": \"A1\", \"start\": \"14:00\"}}", "metadata": {"note": "Clean payload, call_id omitted (optional field)."}}
+{"input": "send a reminder email", "actual_output": "{\"tool_name\": \"send_email\", \"arguments\": {\"to\": \"user@example.com\", \"subject\": \"Reminder\"}}", "metadata": {"note": "Clean payload, call_id omitted (optional field)."}}
