@@ -31,10 +31,8 @@ is the only place the known-bad cases (hallucinations, off-topic answers) get ch
 
 Measured against the 15-case golden set (`--min-agreement 0.8`, the default):
 
-| Metric | Agreement | MAE | Pearson r | n |
-|---|---|---|---|---|
-| faithfulness | **40%** | 0.59 | -0.21 | 15 |
-| answer_relevancy | **20%** | 0.60 | -0.16 | 15 |
+- **faithfulness** — agreement **40%**, MAE 0.59, Pearson r -0.21, n=15
+- **answer_relevancy** — agreement **20%**, MAE 0.60, Pearson r -0.16, n=15
 
 Both fail the 80% bar — badly. Negative Pearson r means the judge's scores are, if anything,
 *inversely* related to the human labels on this set: not just noisy, actively unreliable.

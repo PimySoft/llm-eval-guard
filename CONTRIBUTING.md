@@ -34,7 +34,9 @@ docs/judge-calibration.md).
 ## Adding a new metric adapter
 
 Implement `llm_eval_guard.core.metric.Metric` and normalize the underlying engine's result into
-`MetricResult`. See `llm_eval_guard/metrics/deepeval_adapter.py` for the reference implementation.
+`MetricResult`. See `llm_eval_guard/metrics/deepeval_adapter.py` for the reference implementation
+and [docs/architecture.md](docs/architecture.md#extension-points) for the other extension points
+(custom schema, prompt source, PII/toxicity backend).
 
 ## Adding red-team content
 

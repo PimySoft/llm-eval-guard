@@ -32,14 +32,14 @@ faithfulness regressions, broken output contracts, and prompt-injection exposure
 | License | Apache-2.0 | OSS tooling license with an explicit patent grant — standard for infra tools, signals it's safe to adopt inside a company |
 | Package name | `llm-eval-guard` | Confirmed available on PyPI (no existing project at this name) |
 
-## Skills Demonstrated (build toward this — final table ships in README Phase 6.1)
+## Skills Demonstrated (final table ships in [README.md](README.md#skills-demonstrated))
 
 - [x] Metric-based LLM/RAG evaluation (faithfulness, answer relevancy) — Phase 2
 - [x] Judge calibration / meta-evaluation against human-labeled ground truth — Phase 2.6
 - [x] Schema/contract testing for structured LLM output — Phase 3.1
 - [x] Regression testing via prompt-drift snapshots — Phase 3.2
-- [ ] Adversarial/red-team testing: prompt injection (direct + indirect), jailbreaks, PII, toxicity — Phase 4
-- [ ] CI quality gates with threshold enforcement and automated PR reporting — Phase 5
+- [x] Adversarial/red-team testing: prompt injection (direct + indirect), jailbreaks, PII, toxicity — Phase 4
+- [x] CI quality gates with threshold enforcement and automated PR reporting — Phase 5
 
 ## Cost policy
 

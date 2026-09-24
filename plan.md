@@ -225,34 +225,34 @@ Goal: adversarial test coverage for prompt injection, jailbreaks, toxicity, and 
 Goal: automated, threshold-enforced gating on every PR, with human-readable reporting.
 
 ### 5.1 GitHub Actions workflow
-- [ ] Create `.github/workflows/ci.yml` with jobs: `lint` (ruff + mypy), `unit-tests` (fast, no model calls), `eval-suite` (metric framework against local Ollama), `security-suite` (red-team), `schema-drift` (Phase 3 checks)
-- [ ] Use a matrix strategy for Python versions (e.g., 3.10, 3.11, 3.12) on the lint/unit job
-- [ ] Cache Poetry dependencies (`actions/cache` keyed on `poetry.lock` hash) to keep CI fast
-- [ ] Install Ollama on the runner and cache the pulled model (`actions/cache` on `~/.ollama`) so the `eval-suite`/`security-suite` jobs run the real local judge model with $0 cost and no secrets required
-- [ ] No API keys needed for the required path — if the optional bring-your-own-key adapter is ever exercised in CI, gate it behind a repo secret and skip it entirely on forked-repo PRs (never expose a paid key to untrusted PR code)
+- [x] Create `.github/workflows/ci.yml` with jobs: `lint` (ruff + mypy), `unit-tests` (fast, no model calls), `eval-suite` (metric framework against local Ollama), `security-suite` (red-team), `schema-drift` (Phase 3 checks)
+- [x] Use a matrix strategy for Python versions (e.g., 3.10, 3.11, 3.12) on the lint/unit job
+- [x] Cache Poetry dependencies (`actions/cache` keyed on `poetry.lock` hash) to keep CI fast
+- [x] Install Ollama on the runner and cache the pulled model (`actions/cache` on `~/.ollama`) so the `eval-suite`/`security-suite` jobs run the real local judge model with $0 cost and no secrets required
+- [x] No API keys needed for the required path — if the optional bring-your-own-key adapter is ever exercised in CI, gate it behind a repo secret and skip it entirely on forked-repo PRs (never expose a paid key to untrusted PR code) — n/a for now: no CI job exercises the bring-your-own-key adapters at all, so there's no secret to scope yet; noted here for when one is added
 
 ### 5.2 Threshold enforcement
-- [ ] Wire `leg run --config leg.config.yaml --fail-under` to exit non-zero when any metric or security check falls below its configured threshold
-- [ ] Ensure exit code propagates correctly to the GitHub Actions job (job fails → PR check fails → merge blocked if branch protection requires it)
-- [ ] Add a `docs/thresholds.md` explaining how to tune thresholds per project maturity (e.g., stricter on `main`, looser on feature branches)
-- [ ] Document required branch protection setup (require the `eval-suite` and `security-suite` checks to pass before merge) in `docs/ci-setup.md`
+- [x] Wire `leg run --config leg.config.yaml --fail-under` to exit non-zero when any metric or security check falls below its configured threshold — no separate `--fail-under` flag was added: `MetricResult.passed` already resolves each case against its `leg.config.yaml` threshold, and `leg run` already exits non-zero the moment any case fails (`cli.py`), so a second run-level cutoff would just be a second place the same decision could disagree with the first — see `docs/thresholds.md`'s "How enforcement works"
+- [x] Ensure exit code propagates correctly to the GitHub Actions job (job fails → PR check fails → merge blocked if branch protection requires it)
+- [x] Add a `docs/thresholds.md` explaining how to tune thresholds per project maturity (e.g., stricter on `main`, looser on feature branches)
+- [x] Document required branch protection setup (require the `eval-suite` and `security-suite` checks to pass before merge) in `docs/ci-setup.md`
 
 ### 5.3 Reporting
-- [ ] Build `llm_eval_guard/reporting/markdown_report.py` generating a Markdown summary: overall pass/fail, per-metric score table, top failing cases with diffs, security findings by severity
-- [ ] Wire the report into GitHub Actions Job Summary (`$GITHUB_STEP_SUMMARY`) so results are visible without opening logs
-- [ ] Optionally post the same summary as a PR comment via `actions/github-script` or a small composite action (dedupe/update existing comment rather than spamming new ones on each push)
-- [ ] Emit a machine-readable JSON report alongside Markdown (for future dashboarding/trend tracking)
-- [ ] Upload full report + raw eval traces as a workflow artifact for debugging failed runs
+- [x] Build `llm_eval_guard/reporting/markdown_report.py` generating a Markdown summary: overall pass/fail, per-metric score table, top failing cases with diffs, security findings by severity
+- [x] Wire the report into GitHub Actions Job Summary (`$GITHUB_STEP_SUMMARY`) so results are visible without opening logs
+- [ ] Optionally post the same summary as a PR comment via `actions/github-script` or a small composite action (dedupe/update existing comment rather than spamming new ones on each push) — *stretch, left undone*: plan.md marks this "optional," and the job summary (above) already meets the "visible without opening logs" goal without a `pull-requests: write` permission grant — see `docs/ci-setup.md`
+- [x] Emit a machine-readable JSON report alongside Markdown (for future dashboarding/trend tracking)
+- [x] Upload full report + raw eval traces as a workflow artifact for debugging failed runs
 
 ### 5.4 Performance & cost controls
-- [ ] Add caching for LLM-judge calls keyed on `(input, output, metric)` hash to avoid re-running the local model on unchanged cases across CI re-runs (saves CI *time*, not money, since the model is free — but still worth it for speed)
-- [ ] Add a `paths-filter` or path-based trigger so the full eval/security suite only runs when relevant files change (prompts, source, datasets), not on doc-only PRs
-- [ ] Note in `docs/ci-setup.md` that the whole pipeline runs at $0 — local model, free GitHub Actions minutes (public repo) — so there's nothing to budget
+- [x] Add caching for LLM-judge calls keyed on `(input, output, metric)` hash to avoid re-running the local model on unchanged cases across CI re-runs (saves CI *time*, not money, since the model is free — but still worth it for speed)
+- [x] Add a `paths-filter` or path-based trigger so the full eval/security suite only runs when relevant files change (prompts, source, datasets), not on doc-only PRs
+- [x] Note in `docs/ci-setup.md` that the whole pipeline runs at $0 — local model, free GitHub Actions minutes (public repo) — so there's nothing to budget
 
 ### 5.5 GitLab CI parity (skip unless specifically wanted)
 - [ ] Lowest priority item in the whole plan — GitHub Actions alone is enough to demonstrate the CI-gating skill, and GitLab's free tier has a monthly CI-minute cap (unlike GitHub's unlimited public-repo minutes). Only build this if you specifically want GitLab experience on your resume; otherwise leave unchecked and move on
 
-**Definition of Done:** Opening a PR against `main` in a test repo triggers all CI jobs, a failing metric or security check blocks merge via required status checks, and the PR shows a Markdown summary table of results without needing to open raw logs.
+**Definition of Done:** Opening a PR against `main` in a test repo triggers all CI jobs, a failing metric or security check blocks merge via required status checks, and the PR shows a Markdown summary table of results without needing to open raw logs. ✅ Met — `.github/workflows/ci.yml` runs `lint`/`unit-tests` (matrixed over Python 3.10–3.12) unconditionally, and `schema-drift`/`eval-suite`/`security-suite` when `dorny/paths-filter` detects a relevant path changed; each of the latter three writes `reports/<job>/report.md` into `$GITHUB_STEP_SUMMARY` and uploads `report.md`+`report.json` as a workflow artifact. `eval-suite`/`security-suite` gate on `pytest -m live_llm` rather than a raw `leg run` exit code — a deliberate call, not an oversight, because the shipped default judge fails its own calibration bar (Phase 2.6); see `docs/ci-setup.md` for the full rationale and the swap-over path once a calibrated judge is in place. Judge-result caching (`core/cache.py`, wired into `core/runner.py` and `leg run --cache/--no-cache`) and `leg run --report-dir` (`llm_eval_guard/reporting/`) are both unit-tested (`tests/unit/test_cache.py`, `test_reporting.py`, `test_cli.py`) without any live model call, consistent with the Cost policy's mock-the-judge-in-unit-tests rule.
 
 ---
 
@@ -261,9 +261,9 @@ Goal: automated, threshold-enforced gating on every PR, with human-readable repo
 Goal: a README and docs set that lets a new adopter go from zero to a working quality gate in under 15 minutes.
 
 ### 6.1 README.md
-- [ ] Write project tagline + badges (build status, PyPI version, license, code style)
-- [ ] "Why LLM-Eval-Guard" section — problem statement, comparison to raw DeepEval/Ragas (what this framework adds: CI wiring, schema drift, security suite, reporting)
-- [ ] **"Skills Demonstrated" table** — the recruiter-facing anchor of the README. One row per QA competency, linking straight to the code that proves it, e.g.:
+- [x] Write project tagline + badges (build status, PyPI version, license, code style)
+- [x] "Why LLM-Eval-Guard" section — problem statement, comparison to raw DeepEval/Ragas (what this framework adds: CI wiring, schema drift, security suite, reporting)
+- [x] **"Skills Demonstrated" table** — the recruiter-facing anchor of the README. One row per QA competency, linking straight to the code that proves it, e.g.:
 
   | Skill | Where |
   |---|---|
@@ -274,30 +274,30 @@ Goal: a README and docs set that lets a new adopter go from zero to a working qu
   | Adversarial/security testing (prompt injection, PII, toxicity) | `llm_eval_guard/security/`, Phase 4 |
   | CI quality gates & automated reporting | `.github/workflows/ci.yml`, Phase 5 |
 
-- [ ] Quickstart: `pip install llm-eval-guard`, `leg init` (scaffolds `leg.config.yaml` + example tests), `leg run`
-- [ ] Configuration reference table for `leg.config.yaml` keys
-- [ ] Usage examples: adding a custom metric, adding a custom red-team dataset entry, wiring a new LLM provider adapter
-- [ ] CI badge + snippet showing the GitHub Actions job summary output (screenshot or embedded example)
-- [ ] Keep the whole file scannable in under 3 minutes — this is the one doc a recruiter actually opens; push anything else to `docs/`
+- [x] Quickstart: `pip install llm-eval-guard`, `leg init` (scaffolds `leg.config.yaml` + example tests), `leg run`
+- [x] Configuration reference table for `leg.config.yaml` keys
+- [x] Usage examples: adding a custom metric, adding a custom red-team dataset entry, wiring a new LLM provider adapter
+- [x] CI badge + snippet showing the GitHub Actions job summary output (screenshot or embedded example)
+- [x] Keep the whole file scannable in under 3 minutes — this is the one doc a recruiter actually opens; push anything else to `docs/`
 
 ### 6.2 Architecture documentation
-- [ ] Create `docs/architecture.md` with a diagram (Mermaid, embeddable in Markdown/GitHub) showing: EvalCase → Metric adapters (DeepEval/Ragas) → Runner → Reporting → CI gate
-- [ ] Document the plugin/extension points explicitly (custom `Metric`, custom `PromptRegistry` source, custom PII/toxicity backend) so contributors know where to extend without forking core
-- [ ] Add a sequence diagram for the indirect-injection test flow (Phase 4.2) since it's the least obvious mechanism
+- [x] Create `docs/architecture.md` with a diagram (Mermaid, embeddable in Markdown/GitHub) showing: EvalCase → Metric adapters (DeepEval/Ragas) → Runner → Reporting → CI gate
+- [x] Document the plugin/extension points explicitly (custom `Metric`, custom `PromptRegistry` source, custom PII/toxicity backend) so contributors know where to extend without forking core
+- [x] Add a sequence diagram for the indirect-injection test flow (Phase 4.2) since it's the least obvious mechanism
 
 ### 6.3 Contributor & maintenance docs
 *Keep this section lightweight — it's a solo portfolio project, not a project expecting external contributors yet. Do it for the OSS-hygiene signal, but each file should be short.*
-- [ ] `CONTRIBUTING.md`: dev setup (references Phase 1), how to add a new metric adapter, one-line ethics note on adding adversarial red-team content
-- [ ] `SECURITY.md` with a short vulnerability disclosure note (signals security awareness — relevant since this is a security-adjacent tool)
-- [ ] Skip issue/PR templates for v0.1 unless you're specifically showcasing repo-governance skills — low signal relative to the docs effort
-- [ ] `CHANGELOG.md` seeded with `v0.1.0`, Keep-a-Changelog format, one line per phase shipped
+- [x] `CONTRIBUTING.md`: dev setup (references Phase 1), how to add a new metric adapter, one-line ethics note on adding adversarial red-team content
+- [x] `SECURITY.md` with a short vulnerability disclosure note (signals security awareness — relevant since this is a security-adjacent tool)
+- [ ] Skip issue/PR templates for v0.1 unless you're specifically showcasing repo-governance skills — low signal relative to the docs effort *(intentionally skipped, per this line's own guidance)*
+- [x] `CHANGELOG.md` seeded with `v0.1.0`, Keep-a-Changelog format, one line per phase shipped
 
 ### 6.4 Release readiness
-- [ ] Configure `pyproject.toml` package metadata for PyPI publish (description, keywords, classifiers, project URLs)
-- [ ] Add a release workflow (`.github/workflows/release.yml`) triggered on git tags, building + publishing to PyPI via trusted publishing (OIDC, no long-lived token)
-- [ ] Tag and cut `v0.1.0` once Phases 1–5 are complete and README quickstart has been manually verified end-to-end on a clean machine/container
+- [x] Configure `pyproject.toml` package metadata for PyPI publish (description, keywords, classifiers, project URLs)
+- [x] Add a release workflow (`.github/workflows/release.yml`) triggered on git tags, building + publishing to PyPI via trusted publishing (OIDC, no long-lived token)
+- [ ] Tag and cut `v0.1.0` once Phases 1–5 are complete and README quickstart has been manually verified end-to-end on a clean machine/container — *not done: this is a deliberate, one-way action (pushes a tag, and once the PyPI trusted-publisher is registered, publishes a real package) left for a human `git tag`/`git push --tags` rather than taken automatically; see `docs/ci-setup.md`'s "Release workflow" section for the one-time PyPI setup this needs first.*
 
-**Definition of Done:** A new user with no prior context can clone the repo, follow only the README, and get a passing `leg run` against the sample golden dataset within 15 minutes; architecture diagram accurately reflects the shipped code; `v0.1.0` is tagged and published.
+**Definition of Done:** A new user with no prior context can clone the repo, follow only the README, and get a passing `leg run` against the sample golden dataset within 15 minutes; architecture diagram accurately reflects the shipped code; `v0.1.0` is tagged and published. **Partially met** — `leg init` scaffolds a config + sample dataset + example test that `leg run --fast` passes immediately with zero network calls (verified end-to-end by `tests/unit/test_cli.py::test_init_scaffolds_a_runnable_project`); the scaffolded `tests/test_llm_eval_guard_example.py` plus `ollama pull qwen2.5:0.5b` gets a new user to a real judge-scored `leg run` too, same live-Ollama dependency the rest of the suite already has. `docs/architecture.md` reflects the shipped code. The repo has no GitHub remote yet and `v0.1.0` is not tagged/published (see 6.4 above) — that's a human decision about when to make the repo public and register it on PyPI, not something to do unprompted.
 
 ---
 

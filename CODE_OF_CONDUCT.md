@@ -4,4 +4,4 @@ This project follows the [Contributor Covenant](https://www.contributor-covenant
 v2.1.
 
 In short: be respectful, assume good faith, no harassment. Report issues to the maintainer via
-the contact listed in [SECURITY.md](SECURITY.md) (coming in Phase 6) or repository issues.
+the contact listed in [SECURITY.md](SECURITY.md) or repository issues.
