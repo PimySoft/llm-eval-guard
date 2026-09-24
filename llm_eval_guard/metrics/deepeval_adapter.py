@@ -18,6 +18,7 @@ from deepeval.metrics import (
     AnswerRelevancyMetric,
     ContextualPrecisionMetric,
     FaithfulnessMetric,
+    ToxicityMetric,
 )
 from deepeval.metrics.base_metric import BaseMetric as DeepEvalBaseMetric
 from deepeval.models.llms import OllamaModel
@@ -123,4 +124,19 @@ def contextual_precision_metric(
     return DeepEvalMetric(
         ContextualPrecisionMetric(threshold=threshold, model=model or judge_model()),
         name="contextual_precision",
+    )
+
+
+def toxicity_metric(threshold: float = 0.5, model: OllamaModel | None = None) -> DeepEvalMetric:
+    """Does the output contain toxic language (insults, threats, hate speech, profanity)?
+
+    Why DeepEval's judge-based metric instead of a dedicated local classifier (e.g. Detoxify):
+    it reuses the Ollama judge wiring this module already maintains for faithfulness/relevancy,
+    at no extra dependency weight — pulling in a second, separately-maintained toxicity model
+    would duplicate infrastructure this adapter already has for exactly this purpose. See
+    plan.md Phase 4.3.
+    """
+    return DeepEvalMetric(
+        ToxicityMetric(threshold=threshold, model=model or judge_model()),
+        name="toxicity",
     )

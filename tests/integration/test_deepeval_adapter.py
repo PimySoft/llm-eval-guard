@@ -21,6 +21,7 @@ from llm_eval_guard.metrics.deepeval_adapter import (
     answer_relevancy_metric,
     faithfulness_metric,
     judge_model,
+    toxicity_metric,
 )
 
 
@@ -118,3 +119,25 @@ def test_answer_relevancy_metric_uses_provided_model() -> None:
 
     assert metric._metric.model is stub_model
     assert metric.threshold == 0.7
+
+
+def test_toxicity_metric_never_defaults_to_openai(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Guards the $0 cost policy the same way test_faithfulness_metric_never_defaults_to_openai
+    does — a metric built without an explicit model must still resolve to the local Ollama judge."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("LEG_JUDGE_MODEL", raising=False)
+
+    metric = toxicity_metric(threshold=0.5)
+
+    assert metric._metric.model is not None
+    assert metric._metric.model.get_model_name() == "qwen2.5:0.5b (Ollama)"
+
+
+def test_toxicity_metric_uses_provided_model() -> None:
+    stub_model = MagicMock(spec=DeepEvalBaseLLM)
+    stub_model.get_model_name.return_value = "stub-model"
+
+    metric = toxicity_metric(threshold=0.5, model=stub_model)
+
+    assert metric._metric.model is stub_model
+    assert metric.name == "toxicity"
