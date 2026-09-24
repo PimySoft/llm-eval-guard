@@ -1,0 +1,38 @@
+name: Setup Python + Poetry
+description: >
+  Install Python + Poetry, restore a cached in-project virtualenv keyed on poetry.lock, and
+  `poetry install`. Shared by every CI job (see ../../workflows/ci.yml) so the setup steps live
+  in one place instead of being copy-pasted per job.
+
+inputs:
+  python-version:
+    description: Python version to install.
+    default: "3.12"
+  extras:
+    description: Extras to pass to `poetry install --extras`.
+    default: "deepeval"
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install Poetry
+      shell: bash
+      run: pipx install poetry
+
+    - name: Use an in-project virtualenv (so it's cacheable at a fixed path)
+      shell: bash
+      run: poetry config virtualenvs.in-project true
+
+    - name: Cache Poetry virtualenv
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: poetry-${{ runner.os }}-py${{ inputs.python-version }}-${{ hashFiles('poetry.lock') }}
+
+    - name: Install dependencies
+      shell: bash
+      run: poetry install --extras "${{ inputs.extras }}"

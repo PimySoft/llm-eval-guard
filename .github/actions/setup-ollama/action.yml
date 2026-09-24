@@ -1,0 +1,39 @@
+name: Setup Ollama
+description: >
+  Install Ollama, start it as a background server, and pull the judge model — cached on
+  ~/.ollama so re-pulling only happens when the model changes (plan.md Phase 5.1: $0-cost,
+  no-secrets local judge on a free GitHub-hosted runner).
+
+inputs:
+  model:
+    description: Ollama model tag to pull (must match leg.config.yaml's judge.model / LEG_JUDGE_MODEL).
+    default: "qwen2.5:0.5b"
+
+runs:
+  using: composite
+  steps:
+    - name: Cache Ollama models
+      uses: actions/cache@v4
+      with:
+        path: ~/.ollama
+        key: ollama-${{ inputs.model }}-${{ runner.os }}
+
+    - name: Install Ollama
+      shell: bash
+      run: curl -fsSL https://ollama.com/install.sh | sh
+
+    - name: Start Ollama server
+      shell: bash
+      run: |
+        ollama serve > /tmp/ollama.log 2>&1 &
+        for _ in $(seq 1 60); do
+          curl -sf http://localhost:11434 > /dev/null && exit 0
+          sleep 1
+        done
+        echo "::error::Ollama did not become ready in time" >&2
+        cat /tmp/ollama.log
+        exit 1
+
+    - name: Pull judge model
+      shell: bash
+      run: ollama pull "${{ inputs.model }}"

@@ -1,0 +1,52 @@
+name: Release
+
+# Tag-triggered so a release is a deliberate `git tag vX.Y.Z && git push --tags` action, not a
+# side effect of merging to main (see plan.md Phase 6.4 — CI already gates every merge, this is
+# the separate "publish what's on main" step).
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-python-poetry
+      - name: Verify tag matches pyproject.toml version
+        # A tag/version mismatch means either the tag or the version bump was forgotten — fail
+        # loudly instead of publishing a package whose version doesn't match its own git tag.
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PROJECT_VERSION="$(poetry version -s)"
+          if [ "$TAG_VERSION" != "$PROJECT_VERSION" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match pyproject.toml version $PROJECT_VERSION"
+            exit 1
+          fi
+      - name: poetry build
+        run: poetry build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    # Trusted publishing (PyPI OIDC) — no API token/secret to leak or rotate. Requires the PyPI
+    # project to have this repo + workflow registered as a trusted publisher first (one-time
+    # setup on pypi.org, not in this repo) and a `pypi` environment configured in GitHub repo
+    # settings — see docs/ci-setup.md.
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
