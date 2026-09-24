@@ -1,0 +1,7 @@
+version: "1.0"
+required_variables: [question, context]
+max_length: 2000
+sample_variables:
+  question: "Does the Pro plan include two-factor authentication?"
+  context:
+    - "Pro plan features: 2TB storage, file versioning, SMS and app-based two-factor authentication."
