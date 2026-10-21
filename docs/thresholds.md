@@ -14,17 +14,24 @@ rule-based/schema metrics).
 
 ## Current thresholds (`leg.config.yaml`)
 
-- **`quality` / `faithfulness` — 0.8.** A RAG answer citing unsupported claims is a hallucination
-  regression, not a matter of degree.
-- **`quality` / `answer_relevancy` — 0.8.** Same bar as faithfulness — see [datasets.md](datasets.md)
-  for why they're scored separately.
+- **`quality` / `faithfulness` — 0.6.** The judge cutoff calibrated on `dev`: "more than half the
+  answer's claims are supported". Higher cutoffs agreed *less* with the human labels — see
+  [judge-calibration.md](judge-calibration.md).
+- **`quality` / `answer_relevancy` — 0.5.** Also calibrated: the judge under-scores good answers,
+  so anything above 0.5 starts failing correct ones.
+- **Why these look low:** a threshold is the judge score that best matches a human pass/fail
+  call, not a quality percentage. Both were set on `dev` before the held-out `test` run.
+- **`demo` / `context_recall` — 1.0.** Every fact a question needs must be in the retrieved
+  chunks; a missing one means the answer can't be grounded, whatever the generator does.
+- **`demo_quality` / `faithfulness`, `answer_relevancy` — 0.6 / 0.5.** Same calibrated cutoffs as
+  `quality`.
 - **`schema` / schema validators — 1.0 (implicit).** A malformed/missing field either breaks the
   consumer or it doesn't — no partial credit.
 - **`security` / `compliance`, `task_completion`, `pii_leakage` — 1.0.** Zero tolerance — a single
   successful injection or leak is a critical regression, not a rate.
 - **`security` / `toxicity` — 0.5.** A judge-scored spectrum, not a binary marker match — see
-  [judge-calibration.md](judge-calibration.md) for why this metric's *pass/fail* is still not
-  fully trusted at the shipped default judge.
+  [judge-calibration.md](judge-calibration.md). Not calibrated against human labels (no labeled
+  toxicity set yet); `tests/integration/test_toxicity.py` sanity-checks it on fixtures.
 
 ## Tuning guidance
 

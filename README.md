@@ -47,12 +47,13 @@ on top of one (DeepEval today). What it adds on top of the raw eval engine:
 - **Regression testing** (prompt drift via snapshots) — [`llm_eval_guard/prompts/`](llm_eval_guard/prompts/)
 - **Adversarial/security testing** (prompt injection, PII, toxicity) — [`llm_eval_guard/security/`](llm_eval_guard/security/)
 - **CI quality gates & automated reporting** — [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+- **Test planning** (risk → check, and what's deliberately not covered) — [docs/test-strategy.md](docs/test-strategy.md)
 
 ## Quickstart
 
 ```bash
 pip install llm-eval-guard[deepeval]
-ollama pull qwen2.5:0.5b        # local, $0-cost judge — see Development setup below
+ollama pull qwen2.5:7b          # local, $0-cost calibrated judge (qwen2.5:0.5b = fast CI judge)
 
 leg init                        # scaffolds leg.config.yaml + a sample dataset + example test
 leg run                         # full suite, scored by the local Ollama judge
@@ -92,9 +93,12 @@ suites:
     dataset: datasets/golden/sample_rag_qa.jsonl
     metrics:
       - name: faithfulness
-        threshold: 0.8
+        threshold: 0.6        # calibrated judge cutoff — see docs/thresholds.md
 judge:
-  model: qwen2.5:0.5b
+  model: qwen2.5:7b           # calibrated "recommended" judge
+judge_profiles:
+  ci:
+    model: qwen2.5:0.5b       # fast smoke check: `leg run --judge ci`
 ```
 
 Full key reference: [docs/architecture.md](docs/architecture.md#legconfigyaml-reference) ·
@@ -142,6 +146,20 @@ without opening logs:
 A failing security case renders as `SECURITY FAIL (<severity>)`, separated from quality/schema
 failures in its own table — see [docs/security.md](docs/security.md).
 
+## A caught regression
+
+The gate runs against a real (tiny) RAG app, [`examples/demo_rag`](examples/demo_rag/), not
+only hand-written outputs. Regression demo: branch `demo/regression-top1-retrieval` makes one
+plausible change, `TOP_K = 3` → `1` ("one chunk is enough, halves prompt size").
+
+- **CI gate (`demo-rag` job, `context_recall`):** 12/12 → 8/12 — exit 1, all four multi-hop
+  questions lose a fact they need. Deterministic, so no judge noise.
+- **Calibrated judge (`qwen2.5:7b`, local):** 20/24 → 19/24; faithfulness avg 0.88 → 0.83,
+  relevancy 0.79 → 0.71. The bot says "the context doesn't say", which is *faithful*, so judge
+  metrics barely move. Why the gate checks retrieval directly: see [docs/test-strategy.md](docs/test-strategy.md).
+- The regression PR is kept open-unmerged as evidence; red-team results for the same app are in
+  [docs/security.md](docs/security.md#against-a-real-app-the-demo-rag-bot).
+
 ## Development setup
 
 ```bash
@@ -149,12 +167,13 @@ make install && poetry run pre-commit install && make test
 ```
 
 Prerequisites (Poetry, optional Ollama) and the full workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
-Read [docs/judge-calibration.md](docs/judge-calibration.md) before trusting the default judge's
-scores — it's measured, and the measurement isn't flattering.
+Read [docs/judge-calibration.md](docs/judge-calibration.md) before trusting judge scores. The
+default `qwen2.5:7b` judge agreed with human labels 82% (relevancy) and 71% (faithfulness) on a
+held-out split; the CI judge is an uncalibrated smoke check.
 
 ## Docs
 
 [architecture](docs/architecture.md) · [thresholds](docs/thresholds.md) ·
 [datasets](docs/datasets.md) · [prompt-testing](docs/prompt-testing.md) ·
 [security](docs/security.md) · [ci-setup](docs/ci-setup.md) ·
-[judge-calibration](docs/judge-calibration.md)
+[judge-calibration](docs/judge-calibration.md) · [test-strategy](docs/test-strategy.md)

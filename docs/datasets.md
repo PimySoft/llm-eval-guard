@@ -14,8 +14,17 @@ One JSON object per line. Loaded via `llm_eval_guard.core.load_golden_dataset`.
 
 ### `metadata` keys used by this dataset
 
-- `category` (`str`) — `easy`, `hallucination`, `off-topic`, `appropriate-refusal`, `multi-hop`,
-  `verbose-padding`, `unhelpful-refusal`, `ambiguous`
+- `id` (`str`) — stable `rag-NNN` id; never reuse or renumber
+- `split` (`dev | test`) — ~70/30, stratified by `failure_mode`
+- `category` (`str`) — question shape: `single-fact`, `multi-hop`, `context-missing` (answer not
+  in the retrieved chunks), `verbose`, `ambiguous`
+- `failure_mode` (`str`) — what a correct judge should catch, or `none`:
+  - `hallucinated-detail` — correct answer plus an invented, unasked-for specific
+  - `contradiction` — a claim the retrieved context contradicts
+  - `unsupported-claim` — context lacks the answer; the output asserts one anyway
+  - `partially-grounded` — context answers part of the question; the output guesses the rest
+  - `off-topic` — grounded, but doesn't address the question
+  - `unhelpful-refusal` — declines although the context had the answer
 - `human_faithfulness` (`float 0-1`) — human-reasoned faithfulness score, ground truth for
   [judge-calibration.md](judge-calibration.md)
 - `human_relevancy` (`float 0-1`) — human-reasoned answer-relevancy score, ground truth for
@@ -23,12 +32,40 @@ One JSON object per line. Loaded via `llm_eval_guard.core.load_golden_dataset`.
 - `note` (`str`) — why this label, in one line
 
 **Why:** faithfulness and relevancy are labeled and scored *separately* because they catch
-different failures — an answer can be grounded but off-topic (`off-topic` case), or on-topic but
-hallucinated (`hallucination` cases). Collapsing them into one score would hide which failure mode
-regressed.
+different failures — an answer can be grounded but off-topic, or on-topic but hallucinated.
+Collapsing them into one score would hide which failure mode regressed.
 
-15 cases, hand-labeled: 3 easy, 4 hallucination, 1 off-topic, 1 appropriate-refusal,
-1 unhelpful-refusal, 1 verbose-padding, 1 ambiguous, 3 multi-hop.
+**Why a `dev`/`test` split:** Phase 8 picks a judge model on `dev`; reporting agreement on the
+same data would overstate it. `test` is scored once, for the headline number.
+
+### Labeling rules
+
+- Scale: `1.0` all claims supported; `0.5` core answer right but overstated or resting on a
+  plausible reading; `0.0` any material claim unsupported or contradicted
+- A score ≥ 0.5 counts as pass, so `ambiguous` 0.5 cases are should-pass borderlines
+- The first four failure modes fail faithfulness only; `off-topic`/`unhelpful-refusal` fail
+  relevancy only — `tests/unit/test_dataset.py` enforces this, plus the pass/fail balance (40–60%
+  should-fail) and that every mode appears in both splits
+- Refusals that assert nothing about the product count as faithful
+
+### Composition
+
+56 cases, 28 should-pass / 28 should-fail, 39 `dev` / 17 `test`.
+
+- Failure modes: 28 none, 6 hallucinated-detail, 6 contradiction, 6 unsupported-claim,
+  4 partially-grounded, 4 off-topic, 2 unhelpful-refusal
+- Categories: 25 single-fact, 15 multi-hop, 9 context-missing, 4 ambiguous, 3 verbose
+- Several questions appear twice with a good and a bad answer (HIPAA, family plan, encryption,
+  Free-plan Trash) so a judge can't pass by keying on the question
+
+### Labeler self-agreement
+
+- Ground truth is only as good as the labeler: their consistency caps how good any judge can look
+- Procedure: `python scripts/relabel_sample.py sample` writes a blind 20% sample (11 cases, no
+  labels, notes, failure modes or expected outputs) to `sample_rag_qa.relabel.jsonl`; a few days
+  later, fill in both labels without opening the dataset, then
+  `python scripts/relabel_sample.py score`
+- Result: **not yet measured** — record pass/fail agreement, exact agreement and MAE per label here
 
 ## `datasets/golden/sample_tool_calls.jsonl`
 

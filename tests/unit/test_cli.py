@@ -5,6 +5,7 @@ stay hermetic and never depend on the working directory `leg run` happens to be 
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,16 @@ from typer.testing import CliRunner
 from llm_eval_guard.cli import app
 
 runner = CliRunner()
+
+# Typer forces Rich colour output when GITHUB_ACTIONS is set, which splits `--suite` etc. with
+# escape codes — strip them before asserting on help text.
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _help_text(*args: str) -> str:
+    result = runner.invoke(app, [*args, "--help"])
+    assert result.exit_code == 0
+    return _ANSI.sub("", result.stdout)
 
 
 def _write_schema_suite(tmp_path: Path, *, valid: bool) -> Path:
@@ -143,14 +154,19 @@ def test_run_no_cache_skips_cache_file(tmp_path: Path, monkeypatch: pytest.Monke
 
 
 def test_run_help_locks_in_cli_surface() -> None:
-    result = runner.invoke(app, ["run", "--help"])
+    text = _help_text("run")
 
-    assert result.exit_code == 0
-    assert "--suite" in result.stdout
-    assert "--config" in result.stdout
-    assert "--fast" in result.stdout
-    assert "--report-dir" in result.stdout
-    assert "--cache" in result.stdout
+    for option in ("--suite", "--config", "--fast", "--report-dir", "--cache", "--judge"):
+        assert option in text
+
+
+def test_run_unknown_judge_profile_errors(tmp_path: Path) -> None:
+    config_path = _write_schema_suite(tmp_path, valid=True)
+
+    result = runner.invoke(app, ["run", "--fast", "--config", str(config_path), "--judge", "ci"])
+
+    assert result.exit_code == 2
+    assert "unknown judge profile 'ci'" in result.stdout
 
 
 def test_init_scaffolds_a_runnable_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -192,8 +208,7 @@ def test_init_force_overwrites_existing_files(tmp_path: Path) -> None:
 
 
 def test_init_help_locks_in_cli_surface() -> None:
-    result = runner.invoke(app, ["init", "--help"])
+    text = _help_text("init")
 
-    assert result.exit_code == 0
-    assert "--dir" in result.stdout
-    assert "--force" in result.stdout
+    assert "--dir" in text
+    assert "--force" in text

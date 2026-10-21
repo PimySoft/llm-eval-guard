@@ -6,7 +6,7 @@ description: >
 
 inputs:
   model:
-    description: Ollama model tag to pull (must match leg.config.yaml's judge.model / LEG_JUDGE_MODEL).
+    description: Ollama model tag to pull (must match LEG_JUDGE_MODEL / the active judge profile).
     default: "qwen2.5:0.5b"
 
 runs:

@@ -19,10 +19,10 @@ This isn't just a working tool — it's a portfolio piece and a learning exercis
 
 ### Cost policy — $0 budget, no exceptions
 Everything in this plan must run on free tiers with no credit card required. Concretely:
-- **LLM judge calls (the main cost risk):** default to a **local open-source model via Ollama** (e.g., `llama3.2:3b` or `phi3:mini` — small enough to run on a laptop or a GitHub-hosted runner). DeepEval and Ragas both support pointing at a custom/local LLM endpoint instead of OpenAI — wire that in Phase 2, not a paid API key.
+- **LLM judge calls (the main cost risk):** default to a **local open-source model via Ollama** (shipped default `qwen2.5:0.5b`, small enough for a GitHub-hosted runner; Phase 8 picks a calibrated replacement). DeepEval and Ragas both support pointing at a custom/local LLM endpoint instead of OpenAI — wire that in Phase 2, not a paid API key.
 - **DeepEval's Confident AI cloud reporting is opt-in telemetry/dashboard — leave it disabled** (no login, no cloud sync); run everything in local/offline mode.
 - **Optional alternative for faster judge calls:** a free-tier hosted API with no card required (e.g., Groq or Google AI Studio's free tier) — usable for local dev if you want faster iteration than Ollama, but CI must not depend on it (rate limits + would break CI for other contributors without a key). Document this as opt-in, never required.
-- **PII/toxicity detection:** already planned as local models (Presidio, Detoxify) in Phase 4 — no API cost, keep it that way.
+- **PII/toxicity detection:** PII is regex-based (`security/pii.py`); toxicity uses the local Ollama judge via DeepEval's `ToxicityMetric` — no API cost, no heavy ML dependency, keep it that way.
 - **CI minutes:** keep the GitHub repo **public** — GitHub-hosted Actions runners are free and unlimited for public repos (private repos have a limited free minute quota). This also serves goal 1 (recruiters need a public repo anyway).
 - **GitLab CI parity (Phase 5.5) stays stretch/optional** — GitLab's free tier caps CI minutes/month even on public projects, unlike GitHub; only add it if the free quota is comfortably enough for occasional demo runs.
 - **PyPI publish (Phase 6.4):** free, no changes needed.
@@ -301,6 +301,79 @@ Goal: a README and docs set that lets a new adopter go from zero to a working qu
 
 ---
 
+## Phase 7 — Golden Dataset Expansion
+
+Goal: a labeled set big and balanced enough that a calibration number means something — n=15 can't distinguish a good judge from a lucky one.
+
+- [x] Grow `datasets/golden/sample_rag_qa.jsonl` to ≥50 cases, roughly half that a correct judge should fail (hallucinated detail, unsupported claim, off-topic answer, partially grounded answer)
+- [x] Tag every case with a `failure_mode` category (or `none`) so calibration can report per-category agreement, not just a single average
+- [x] Split into `dev` and `test` (e.g., 70/30 via a `split` metadata field) — Why: Phase 8 picks a judge model on `dev`; reporting agreement on that same data would overstate it
+- [ ] Re-label a random 20% of cases a few days later without looking at the first labels; report your own self-agreement in `docs/datasets.md` — Why: the human labels are the ground truth, so their consistency caps how good any judge can look
+  - Tooling done (`scripts/relabel_sample.py sample|score`, `llm_eval_guard/core/relabel.py`); the re-label pass itself is a human step, still pending
+- [x] Extend `tests/unit/test_dataset.py` to enforce the new fields and the pass/fail balance
+
+**Definition of Done:** ≥50 labeled cases with failure-mode tags and a dev/test split; self-agreement number documented; dataset unit tests enforce the schema. **Partially met** — 56 cases (28/28 pass/fail, 39 dev / 17 test) with failure-mode tags, enforced by `tests/unit/test_dataset.py`; the 41 new labels were drafted by Claude and reviewed/accepted by the maintainer; the self-agreement number is pending the human re-label pass.
+
+---
+
+## Phase 8 — Calibrated Judge
+
+Goal: turn "the default judge fails calibration" into "this judge passes calibration, and here's the number" — so the quality gate actually gates.
+
+- [x] Extend `scripts/calibrate_judge.py`: `--split dev|test`, per-`failure_mode` agreement, wall-clock seconds per case, and a bootstrap 95% confidence interval on agreement — Why: the interval shows when a difference between two models is just noise
+- [x] Run candidate local models on `dev` (e.g., `llama3.2:3b`, `qwen2.5:3b`, `phi3:mini`, `qwen2.5:7b` if hardware allows); record agreement/MAE/r/runtime per model in `docs/judge-calibration.md`
+- [x] Pick the best model that clears the ≥80% bar on `dev`, then report its `test`-split numbers once, as the headline result
+- [x] If it's too slow for a free CI runner, separate the two roles explicitly: a `ci` judge (fast, documented as a smoke check) and a `recommended` judge (calibrated, for local/self-hosted gating) via `leg.config.yaml`, and say which is which in the docs
+- [x] Remove the `xfail` markers that the calibrated judge now passes; make any remaining ones `strict=True` so an unexpected pass fails loudly
+- [x] Follow the swap-over path in `docs/ci-setup.md`: switch `eval-suite` from `pytest -m live_llm` to gating on the `leg run` exit code, if the calibrated judge runs in CI
+  - Not applicable: the calibrated judge is too slow for a free runner, so CI runs the `ci` judge and stays gated on pytest (see `docs/ci-setup.md`)
+- [x] If no local model clears the bar, document that as the finding (with the per-model numbers) and gate on the best one with a lowered, explicitly justified bar — don't quietly pretend
+
+**Definition of Done:** `docs/judge-calibration.md` shows a model comparison and a held-out `test`-split agreement ≥80% with a confidence interval (or a documented, numbers-backed explanation of why none got there); no non-strict `xfail` remains; CI gates on the judge that the docs say it does. **Met via the documented fallback** — six local judges compared on `dev`; `qwen2.5:7b` with per-metric cutoffs (0.6/0.5) fixed on `dev` before one `test` run: relevancy 82% [59–100%], faithfulness 71% [47–88%]. Faithfulness is gated at a lowered, justified 70% bar (`docs/judge-calibration.md`). Roles split: `qwen2.5:7b` is the default/recommended judge, `qwen2.5:0.5b` the `ci` profile CI runs; judge-scored tests are strict `xfail`s only under the `ci` judge (verified in two live runs). No non-strict `xfail` remains. Also fixed: the judge cache ignored model/threshold.
+
+---
+
+## Phase 9 — System Under Test: Demo RAG App + Caught Regression
+
+Goal: prove the gate catches a real regression in a real (tiny) system, rather than scoring hand-written outputs.
+
+- [x] Add `examples/demo_rag/`: a few markdown docs, a simple retriever with no new heavy dependency (keyword/BM25), and generation through the local Ollama model using the `prompts/rag_answer.j2` template
+- [x] Add a `leg` suite whose `actual_output`/`retrieval_context` are *generated* by the demo app at test time (cache them via `core/cache.py`), not hard-coded
+- [x] Run the red-team datasets against the demo app's real responses too; record which attacks it actually fell for in `docs/security.md` — a real finding is worth more than a clean sheet
+- [ ] Create the regression demo: a branch that makes one realistic bad change (e.g., the prompt drops "answer only from the context", or the retriever returns top-1 instead of top-3), open a PR, and let CI go red. Keep the PR closed-unmerged and link it from the README with a screenshot of the job summary
+- [x] Write `docs/test-strategy.md` (short): risk list for an LLM/RAG feature → which check covers each risk → what is deliberately *not* covered and why — Why: it shows test planning and prioritisation, not just tooling
+
+**Definition of Done:** a linked, red PR in the public repo where the gate caught a deliberately introduced regression in the demo app; the red-team results for the demo app are documented; `docs/test-strategy.md` exists. **In progress** — demo app in `examples/demo_rag/` (4 docs / 16 chunks, BM25 top-3, `qwen2.5:3b` via Ollama, generations cached by `core/cache.py`'s `GenerationCache`). Suites take a `generator:` hook; the `demo` suite (deterministic `context_recall`) gates CI's `demo-rag` job on its exit code, `demo_quality` scores the answers with the judge. `demo_security` runs the red-team sets through the app: it fell for 5 of 17 attacks; the gate caught 2, missed 3, and raised 1 false alarm (`docs/security.md`). `docs/test-strategy.md` maps risks to checks and lists what is deliberately not covered. Regression demo prepared on local branch `demo/regression-top1-retrieval` (`TOP_K` 3 → 1): `leg run --suite demo` goes 12/12 → 8/12 (exit 1); the calibrated judge only 20/24 → 19/24 (README "A caught regression"). **Pending human steps:** push, open the PR against `main`, let CI go red, add the PR link + job-summary screenshot to the README.
+
+---
+
+## Phase 10 — Security & Test-Suite Hardening
+
+Goal: close the specific weaknesses a careful reviewer would spot in the rule-based checks and the test suite.
+
+- [ ] PII (`security/pii.py`): add UK National Insurance number, UK phone number, UK postcode, and IBAN patterns; add a Luhn check to `credit_card` to cut false positives on arbitrary 16-digit numbers; synthetic test data only (see CONTRIBUTING.md)
+- [ ] Injection (`security/injection.py`): add unit cases for the known false positive (a refusal that quotes the attack, e.g. "I won't wire $500") and false negative (paraphrased compliance); mitigate the false positive (e.g., don't count markers inside quoted spans or immediately after a refusal phrase) and document the remaining limits in `docs/security.md`
+- [ ] Make every remaining `xfail` `strict=True`, and set `asyncio_default_fixture_loop_scope` to clear the pytest deprecation warnings
+- [ ] Raise unit coverage from 67% to ≥80%; add `--cov-fail-under=80` to the `unit-tests` CI job
+
+**Definition of Done:** new PII patterns plus the Luhn check are unit-tested; the injection false positive/negative cases exist and the mitigated one passes; there are no non-strict `xfail`s and no deprecation warnings; CI enforces ≥80% coverage.
+
+---
+
+## Phase 11 — Release v0.1.0
+
+Goal: ship it. This replaces the outstanding Phase 6.4 tag step, so the published version includes Phases 7–10.
+
+- [ ] Fix the Phase 6 DoD note that says the repo has no GitHub remote (it now has one); make sure the repo is public
+- [ ] Register the PyPI trusted publisher (one-time setup, see the "Release workflow" section of `docs/ci-setup.md`)
+- [ ] Verify the README quickstart end-to-end in a clean container (`pip install` from TestPyPI or a built wheel → `leg init` → `leg run --fast`)
+- [ ] Update `CHANGELOG.md` with Phases 7–10, then `git tag v0.1.0 && git push --tags` — a manual, human step
+- [ ] Confirm the PyPI page renders and the PyPI badge in the README resolves
+
+**Definition of Done:** `pip install llm-eval-guard` works from public PyPI on a clean machine, and the README quickstart passes as written.
+
+---
+
 ## Suggested Milestone Sequencing
 
 - **M1 — Foundation** (Phases 0–1): repo scaffolded, lint/pre-commit enforced.
@@ -308,6 +381,9 @@ Goal: a README and docs set that lets a new adopter go from zero to a working qu
   working locally.
 - **M3 — Security Engine** (Phase 4): red-team suite operational.
 - **M4 — Automation** (Phase 5): CI gate live, blocking merges.
-- **M5 — Public Launch** (Phase 6): docs complete, `v0.1.0` published.
+- **M5 — Public Launch** (Phase 6): docs complete.
+- **M6 — Credibility** (Phases 7–10): calibrated judge on a meaningful dataset, a real
+  regression caught in a demo app, hardened security checks.
+- **M7 — Release** (Phase 11): `v0.1.0` published to PyPI.
 
 Treat M1–M2 as the critical path — nothing in Phases 4–6 is meaningfully testable without the `Metric`/`EvalCase` abstraction and the local runner from Phase 2–3 in place.

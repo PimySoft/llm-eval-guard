@@ -9,9 +9,11 @@ engine scored a case.
 ```mermaid
 flowchart LR
     D[("datasets/*.jsonl")] --> E[EvalCase]
+    D --> G["suite generator\n(system under test, e.g. examples/demo_rag)"]
+    G --> E
     E --> M1["DeepEval adapter\n(faithfulness, relevancy, toxicity)"]
     E --> M2["Schema adapter\n(SchemaValidationMetric)"]
-    E --> M3["Security adapters\n(compliance, task_completion, pii_leakage)"]
+    E --> M3["Rule-based adapters\n(compliance, task_completion, pii_leakage, context_recall)"]
     M1 --> R[MetricResult]
     M2 --> R
     M3 --> R
@@ -42,6 +44,10 @@ flowchart TD
 
 - `suites.<name>.dataset` (`str | list[str]`) — one JSONL path, or several concatenated in order
   (e.g. `security`'s four red-team files)
+- `suites.<name>.generator` (`str | null`) — `module.path:function` taking and returning an
+  `EvalCase`; called per case to fill `actual_output`/`retrieval_context` from the real app, so
+  dataset lines may omit `actual_output`. Skipped entirely under `--fast` (it calls the app).
+  Imported with the working directory on `sys.path`
 - `suites.<name>.metrics[].name` (`str`) — a registry key (`faithfulness`, `toxicity`,
   `compliance`, ...) or `schema:module.path:ClassName` for a custom Pydantic schema
 - `suites.<name>.metrics[].threshold` (`float | null`) — pass/fail cutoff; omitted falls back to
@@ -49,8 +55,10 @@ flowchart TD
 - `suites.<name>.metrics[].fast` (`bool`) — whether `leg run --fast` includes this metric — `true`
   only for checks with no network call
 - `judge.model` (`str | null`) — Ollama model tag; falls back to `LEG_JUDGE_MODEL` env var, then a
-  built-in default
+  built-in default (`qwen2.5:7b`, the calibrated judge)
 - `judge.base_url` (`str | null`) — Ollama server URL; falls back to `OLLAMA_BASE_URL` env var
+- `judge_profiles.<name>` — named alternatives with the same keys as `judge`, picked with
+  `leg run --judge <name>` or `LEG_JUDGE_PROFILE`; the repo ships `ci` (fast, uncalibrated)
 
 Dataset paths resolve relative to the working directory `leg run` is invoked from, not the config
 file's own directory (`core/dataset.py`) — run `leg run` from the project root, same as `pytest`.

@@ -32,16 +32,23 @@ from llm_eval_guard.core.models import EvalCase, MetricResult
 # contributor who explicitly opts in by exporting it themselves is still respected.
 os.environ.setdefault("DEEPEVAL_TELEMETRY_OPT_OUT", "1")
 
-# Why a small model: GitHub Actions' free hosted runners (Phase 5) are CPU-only, no GPU — a
-# 0.5B model is what keeps `eval-suite` finishing in CI in reasonable time at $0 cost. Teams with
-# GPU capacity or looser CI time budgets can point LEG_JUDGE_MODEL at something bigger
-# (llama3.2:3b, phi3:mini); just re-run scripts/calibrate_judge.py against it first — model
-# choice is a calibration decision, not a guess (see docs/judge-calibration.md).
-DEFAULT_JUDGE_MODEL = "qwen2.5:0.5b"
+# Two judge roles (docs/judge-calibration.md):
+# - DEFAULT_JUDGE_MODEL is the "recommended" judge — the best of six local models calibrated
+#   against the human labels; use it for local/self-hosted gating.
+# - CI_JUDGE_MODEL is a fast, uncalibrated smoke-check judge for free CPU-only Actions runners,
+#   where a 7B judge is too slow. Its scores prove the plumbing runs, not that answers are good.
+# Changing either requires re-running scripts/calibrate_judge.py first.
+DEFAULT_JUDGE_MODEL = "qwen2.5:7b"
+CI_JUDGE_MODEL = "qwen2.5:0.5b"
 
 # A judge score at or above this counts as a "pass" for calibration purposes (scripts/
 # calibrate_judge.py) — separate from whatever threshold a metric is actually deployed with.
 PASS_THRESHOLD_DEFAULT = 0.5
+
+
+def resolve_judge_model_name(model_name: str | None = None) -> str:
+    """Explicit name, else ``LEG_JUDGE_MODEL``, else :data:`DEFAULT_JUDGE_MODEL`."""
+    return model_name or os.environ.get("LEG_JUDGE_MODEL", DEFAULT_JUDGE_MODEL)
 
 
 def judge_model(model_name: str | None = None, base_url: str | None = None) -> OllamaModel:
@@ -52,7 +59,7 @@ def judge_model(model_name: str | None = None, base_url: str | None = None) -> O
     swapping models is a calibration decision, not a guess).
     """
     return OllamaModel(
-        model=model_name or os.environ.get("LEG_JUDGE_MODEL", DEFAULT_JUDGE_MODEL),
+        model=resolve_judge_model_name(model_name),
         base_url=base_url or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434"),
     )
 

@@ -7,76 +7,104 @@ what it found.
 
 ## How it works
 
-`scripts/calibrate_judge.py` runs the configured judge model over every case in
-[`datasets/golden/sample_rag_qa.jsonl`](../datasets/golden/sample_rag_qa.jsonl) and compares its
-`faithfulness`/`answer_relevancy` scores against the hand-assigned `human_faithfulness` /
-`human_relevancy` labels (see [datasets.md](datasets.md)). It reports:
+`scripts/calibrate_judge.py` scores the cases in
+[`datasets/golden/sample_rag_qa.jsonl`](../datasets/golden/sample_rag_qa.jsonl) with the judge and
+compares against the hand-assigned `human_faithfulness`/`human_relevancy` labels (see
+[datasets.md](datasets.md)). It reports:
 
-- **Pass/fail agreement** — does the judge's pass/fail call (score ≥ 0.5) match the human label's?
+- **Pass/fail agreement** — does the judge's pass/fail call match the human label's (human label
+  passes at ≥ 0.5)? Plus a bootstrap 95% confidence interval.
 - **Mean absolute error** — average `|human_score - judge_score|`
 - **Pearson r** — do the judge's scores move with the human scores at all?
+- **Per-`failure_mode` agreement** and **seconds per case**
 
 ```bash
-python scripts/calibrate_judge.py                          # default judge model
-python scripts/calibrate_judge.py --model llama3.2:1b       # try a different judge
-python scripts/calibrate_judge.py --min-agreement 0.8       # exit 1 if agreement falls short
+python scripts/calibrate_judge.py --model qwen2.5:7b --split dev     # tune/compare on dev
+python scripts/calibrate_judge.py --model qwen2.5:7b --split dev \
+  --faithfulness-threshold 0.6 --relevancy-threshold 0.5             # judge pass cutoffs
+python scripts/calibrate_judge.py --split dev --json > result.json   # includes per-case scores
 ```
 
+- Exits 1 if either metric's agreement is below `--min-agreement` (default 0.8).
+- Split discipline: compare models and tune cutoffs on `dev` only; run `test` once, for the final
+  choice. **Why:** reporting agreement on the data it was tuned on would overstate it.
+- `DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE=300` avoids spurious timeouts on slower models.
+
 **Why not just eyeball the example test suite's pass rate:** `tests/integration/test_faithfulness.py`
-only samples cases already labeled "should pass" — it has no cases the judge is *supposed* to
-reject. A judge that rubber-stamps everything as faithful would still look fine there. Calibration
-is the only place the known-bad cases (hallucinations, off-topic answers) get checked.
+only samples cases already labeled "should pass". A judge that rubber-stamps everything would
+still look fine there; calibration is where the known-bad cases get checked.
 
-## Result: `qwen2.5:0.5b` fails calibration
+## Model comparison (`dev`, n=39, Apple M3 GPU)
 
-Measured against the 15-case golden set (`--min-agreement 0.8`, the default):
+At the original 0.5 judge cutoff for both metrics:
 
-- **faithfulness** — agreement **40%**, MAE 0.59, Pearson r -0.21, n=15
-- **answer_relevancy** — agreement **20%**, MAE 0.60, Pearson r -0.16, n=15
+- `qwen2.5:0.5b` — faithfulness 49% [33–64%], relevancy 26% [13–41%], ~1.5 s/case
+- `llama3.2:1b` — did not finish: one judge call hung past a 300 s timeout
+- `qwen2.5:3b` — faithfulness 51% [36–67%] (r −0.26), relevancy 46% [31–62%], ~8 s/case
+- `phi3:mini` — faithfulness 56% [41–72%], relevancy 49% [33–64%], ~11 s/case
+- `llama3.2:3b` — faithfulness 67% [51–82%], relevancy 67% [51–79%], ~5–7 s/case
+- `qwen2.5:7b` — faithfulness 64% [49–79%], relevancy **87%** [74–97%], ~14–18 s/case
 
-Both fail the 80% bar — badly. Negative Pearson r means the judge's scores are, if anything,
-*inversely* related to the human labels on this set: not just noisy, actively unreliable.
+`qwen2.5:7b` reproduced the same 64%/87% on a second run. Every model accepted good answers but
+missed contradictions and hallucinated details on faithfulness.
 
-**Why it's still the shipped default:** it's what runs in reasonable time on a free, CPU-only
-Actions runner. It's never *silently* trusted — `calibrate_judge.py` exits 1 on it, and the
-judge-scored integration tests are marked `xfail` with a pointer back here.
+## Judge cutoff tuning (`dev`)
 
-## Known failure modes (observed)
+Sweeping the judge cutoff (0.5–1.0) for the top two models, from per-case scores:
 
-**Boilerplate, self-contradictory reasoning.** Across unrelated cases, the faithfulness judge
-returned near-identical reason text regardless of input, including internally contradictory
-phrasing:
+- `qwen2.5:7b` faithfulness — 64% at 0.5, **82%** at 0.6, 79% at 0.7, 74% at 0.8
+- `qwen2.5:7b` relevancy — **87%** at 0.5, 72% at 0.6, 64% at 0.8
+- `llama3.2:3b` — best at 0.5 for both (67%); higher cutoffs only got worse
 
-> "The score is 0.67 because the actual output does not align with the information provided in
-> the retrieval context. The contradictions are not present in the given information."
+Why the cutoffs differ per metric:
 
-Same sentence, verbatim, on both a correct answer and a fabricated one — the model isn't
-performing case-specific entailment checking at this size, just emitting a plausible-shaped
-template.
+- **Faithfulness over-credits half-grounded answers.** Wrong answers cluster at exactly 0.5 (one
+  of two claims supported); good answers are mostly 1.0, with no case between 0.5 and 0.67. A 0.6
+  cutoff ("more than half the claims supported") sits in that gap rather than on a single case.
+- **Relevancy under-scores good answers.** Many correct, on-topic answers score 0.33–0.5, so any
+  cutoff above 0.5 starts failing them.
 
-**Verdict count doesn't track claim count.** Faithfulness decomposes an answer into claims, then
-generates one verdict per claim. On a 1-claim case it returned 3 verdicts; on a 2-claim case, also
-3. The judge isn't reliably tracking its own intermediate reasoning state.
+## Chosen judge (fixed on `dev`, before the `test` run)
 
-**Fabricated domain facts in relevancy reasoning.** Grading a `sample_rag_qa.jsonl` case about
-"Aperture Cloud Storage," the relevancy judge justified a score by asserting:
+- Model `qwen2.5:7b`; judge cutoffs: faithfulness 0.6, answer_relevancy 0.5
+- `dev`: faithfulness **82%** [69–92%], MAE 0.30, r 0.50; relevancy **87%** [74–97%], MAE 0.21,
+  r 0.63
+- Weakest faithfulness categories: `unsupported-claim` 50% (n=4), `partially-grounded` 67% (n=3)
 
-> "The Free plan is a basic version of Alibaba Cloud's services..."
+## Held-out result (`test`, n=17)
 
-Alibaba Cloud is never mentioned anywhere in the dataset — a fabricated association, not a typo.
+Run once with the choice above; not re-tuned afterwards.
 
-**Net effect:** the judge doesn't discriminate between faithful and hallucinated answers — most
-cases (good and bad alike) cluster around the same ~0.0/0.33/0.67 scores regardless of content,
-which is exactly what near-zero/negative correlation means in practice.
+- **answer_relevancy — 82%** [59–100%], MAE 0.19, r 0.59, ~12 s/case. Clears the 80% bar.
+- **faithfulness — 71%** [47–88%], MAE 0.24, r 0.58, ~22 s/case. **Below the 80% bar.**
+- Faithfulness errors flipped direction vs `dev`: 4 of 8 correct (`none`) answers scored 0.0 or
+  0.5, i.e. false rejections, plus 1 hallucinated detail let through at 0.67.
+- n=17 is small — the interval spans 47–88%, so this neither confirms nor rules out an 80% judge.
 
-## Recommendation
+## Gate decision: faithfulness at a lowered 70% bar
 
-Don't trust `qwen2.5:0.5b` (or any judge) for real gating decisions without a calibration run that
-clears your bar. To get a usable judge:
+No local model cleared 80% held-out on faithfulness, so per plan.md the best one is gated at a
+lowered, explicit bar instead of being quietly trusted:
 
-1. Re-run with a larger model: `python scripts/calibrate_judge.py --model llama3.2:3b`
-   (untested; `llama3.2:1b` timed out on the CPU it was tried on).
-2. Set `LEG_JUDGE_MODEL` to whatever passes, and re-run calibration whenever you change the model
-   or prompt — model choice is a tuning decision this script backs with a number, not a guess.
-3. If no local model clears the bar on your hardware, the bring-your-own-key adapters (OpenAI/
-   Anthropic, opt-in only — see VISION.md) are the fallback, at the cost of leaving the $0 policy.
+- Faithfulness gates at **70%** (`MIN_PASS_RATE` in `tests/integration/test_faithfulness.py`);
+  relevancy keeps 80%.
+- Why 70% is defensible: `dev` 82%, `test` 71%, and the `test` interval (47–88%) includes 80%.
+- Why it still catches regressions: gates use a suite pass *rate*, so per-case judge errors
+  average out; a grounding regression shifts the whole rate, not one case.
+- The human self-agreement number (Phase 7 re-label) is still pending; it caps any judge.
+- Re-calibrate on a fresh, larger held-out set before raising this bar — not on this `test` split.
+
+## Judge roles
+
+- **`recommended` — `qwen2.5:7b`** (default `judge` in `leg.config.yaml`): the numbers above;
+  use for local/self-hosted gating.
+- **`ci` — `qwen2.5:0.5b`** (`judge_profiles.ci`, `leg run --judge ci`): fast, **uncalibrated**
+  smoke check for free CPU runners; judge-scored tests are strict `xfail`s under it.
+
+## `qwen2.5:0.5b` failure modes (observed)
+
+- **Boilerplate reasoning** — near-identical, self-contradictory reason text on unrelated cases
+  ("...does not align with the retrieval context. The contradictions are not present...").
+- **Verdict count doesn't track claim count** — 3 verdicts for both a 1-claim and a 2-claim case.
+- **Fabricated facts in its reasoning** — justified a relevancy score by citing "Alibaba Cloud",
+  which appears nowhere in the dataset.

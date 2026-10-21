@@ -12,10 +12,20 @@ REPO_CONFIG = Path(__file__).parent.parent.parent / "leg.config.yaml"
 def test_load_config_parses_repo_config() -> None:
     config = load_config(REPO_CONFIG)
 
-    assert set(config.suites) == {"quality", "schema", "security"}
+    assert set(config.suites) == {
+        "quality",
+        "schema",
+        "security",
+        "demo",
+        "demo_quality",
+        "demo_security",
+    }
+    assert config.suites["demo"].generator == "examples.demo_rag.app:generate"
+    assert config.suites["quality"].generator is None
     assert config.suites["quality"].dataset == "datasets/golden/sample_rag_qa.jsonl"
     assert config.suites["schema"].metrics[0].fast is True
-    assert config.judge.model == "qwen2.5:0.5b"
+    assert config.judge.model == "qwen2.5:7b"
+    assert config.resolve_judge("ci").model == "qwen2.5:0.5b"
 
 
 def test_load_config_missing_file_raises(tmp_path: Path) -> None:
@@ -41,3 +51,18 @@ def test_load_config_defaults_judge_when_omitted(tmp_path: Path) -> None:
 
     assert config.judge.model is None
     assert config.judge.base_url is None
+
+
+def test_resolve_judge_picks_named_profile_or_default(tmp_path: Path) -> None:
+    config_path = tmp_path / "leg.config.yaml"
+    config_path.write_text(
+        "suites: {}\njudge:\n  model: big\njudge_profiles:\n  ci:\n    model: small\n",
+        encoding="utf-8",
+    )
+
+    config = load_config(config_path)
+
+    assert config.resolve_judge(None).model == "big"
+    assert config.resolve_judge("ci").model == "small"
+    with pytest.raises(ValueError, match="known: ci"):
+        config.resolve_judge("nope")

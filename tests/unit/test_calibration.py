@@ -1,6 +1,8 @@
+import json
+
 import pytest
 
-from llm_eval_guard.core.calibration import calibrate
+from llm_eval_guard.core.calibration import calibrate, load_and_calibrate
 from llm_eval_guard.core.metric import Metric
 from llm_eval_guard.core.models import EvalCase, MetricResult
 
@@ -78,3 +80,71 @@ def test_empty_calibration_has_zero_agreement_not_a_crash() -> None:
     assert calibration.pass_fail_agreement == 0.0
     assert calibration.mean_absolute_error == 0.0
     assert calibration.pearson_r is None
+
+
+def test_per_failure_mode_groups_agreement_by_tag() -> None:
+    cases = [
+        EvalCase(input="a", actual_output="x", metadata={"human_score": 1.0}),
+        EvalCase(
+            input="b",
+            actual_output="y",
+            metadata={"human_score": 0.0, "failure_mode": "hallucinated-detail"},
+        ),
+    ]
+
+    calibration = calibrate(cases, PerfectJudge(), "human_score")
+
+    assert calibration.per_failure_mode() == {"hallucinated-detail": (1.0, 1), "none": (1.0, 1)}
+
+
+def test_agreement_ci_brackets_the_point_estimate_and_is_deterministic() -> None:
+    cases = [
+        EvalCase(input=str(i), actual_output="x", metadata={"human_score": float(i % 2)})
+        for i in range(40)
+    ]
+    # Half the cases disagree: flip the label only on the first 10.
+    calibration = calibrate(cases, PerfectJudge(), "human_score")
+    for case in calibration.cases[:10]:
+        case.judge_score = 1.0 - case.human_score
+
+    ci = calibration.agreement_ci()
+
+    assert ci is not None
+    low, high = ci
+    assert low < calibration.pass_fail_agreement < high
+    assert ci == calibration.agreement_ci()
+
+
+def test_agreement_ci_is_none_for_empty_calibration() -> None:
+    assert calibrate([], PerfectJudge(), "human_score").agreement_ci() is None
+
+
+def test_load_and_calibrate_filters_by_split(tmp_path) -> None:
+    rows = [
+        {"input": "a", "actual_output": "x", "metadata": {"human_score": 1.0, "split": "dev"}},
+        {"input": "b", "actual_output": "y", "metadata": {"human_score": 1.0, "split": "test"}},
+    ]
+    path = tmp_path / "cases.jsonl"
+    path.write_text("\n".join(json.dumps(r) for r in rows))
+
+    calibration = load_and_calibrate(path, PerfectJudge(), "human_score", split="dev")
+
+    assert [c.input for c in calibration.cases] == ["a"]
+
+
+def test_judge_threshold_moves_only_the_judge_cutoff() -> None:
+    class ConstantJudge(PerfectJudge):
+        def evaluate(self, case: EvalCase) -> MetricResult:
+            return MetricResult(metric_name=self.name, score=0.67, passed=True, reason=None)
+
+    cases = [
+        EvalCase(input="good", actual_output="x", metadata={"human_score": 1.0}),
+        EvalCase(input="partial", actual_output="y", metadata={"human_score": 0.0}),
+        EvalCase(input="borderline", actual_output="z", metadata={"human_score": 0.5}),
+    ]
+
+    lenient = calibrate(cases, ConstantJudge(), "human_score")
+    strict = calibrate(cases, ConstantJudge(), "human_score", judge_threshold=0.8)
+
+    assert [c.agrees for c in lenient.cases] == [True, False, True]
+    assert [c.agrees for c in strict.cases] == [False, True, False]

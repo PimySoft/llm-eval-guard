@@ -9,13 +9,11 @@ Why a minimum pass *rate* rather than requiring every case to pass: the local ju
 probabilistic — gating a regression suite on every single score would make it flaky by
 construction, even with a well-calibrated judge.
 
-Why `xfail`: scripts/calibrate_judge.py measured the *default* judge (qwen2.5:0.5b, chosen for
-CPU-only CI speed — see metrics/deepeval_adapter.py) at 40% pass/fail agreement against human
-labels, well under a usable bar. Asserting a meaningful MIN_PASS_RATE against a judge known to be
-this unreliable would either be a flaky red build or a dishonestly low bar chosen just to pass.
-`xfail(strict=False)` records that honestly: expected-to-fail with the shipped default, and
-non-fatal (not reported as a failure) if you swap LEG_JUDGE_MODEL for a stronger judge and it
-starts passing. See docs/judge-calibration.md.
+Why MIN_PASS_RATE is 0.7, not 0.8: the calibrated judge (qwen2.5:7b) agreed with the human
+faithfulness labels 71% of the time on the held-out split — the gate can't honestly demand more
+than the judge can deliver. Why the 0.6 metric threshold: it's the calibrated judge cutoff.
+Under the CI smoke-check judge this is a strict xfail (tests/integration/_judge.py).
+See docs/judge-calibration.md.
 """
 
 from __future__ import annotations
@@ -26,8 +24,9 @@ from deepeval.models.llms import OllamaModel
 from llm_eval_guard.core import EvalCase
 from llm_eval_guard.metrics.deepeval_adapter import faithfulness_metric
 from llm_eval_guard.pytest_plugin import assert_min_pass_rate
+from tests.integration._judge import xfail_under_ci_judge
 
-MIN_PASS_RATE = 0.8
+MIN_PASS_RATE = 0.7
 
 pytestmark = [
     pytest.mark.live_llm,
@@ -35,10 +34,7 @@ pytestmark = [
     # this file) — the actual gate is assert_min_pass_rate() below, not assert_eval_metric(),
     # for the reasons in the module docstring.
     pytest.mark.eval_metric(name="faithfulness", threshold=MIN_PASS_RATE),
-    pytest.mark.xfail(
-        reason="Default judge (qwen2.5:0.5b) fails calibration — see docs/judge-calibration.md",
-        strict=False,
-    ),
+    xfail_under_ci_judge,
 ]
 
 
@@ -47,7 +43,7 @@ def _known_faithful_cases(golden_dataset: list[EvalCase]) -> list[EvalCase]:
 
 
 def test_faithfulness_on_golden_set(golden_dataset: list[EvalCase], judge_llm: OllamaModel) -> None:
-    metric = faithfulness_metric(threshold=0.5, model=judge_llm)
+    metric = faithfulness_metric(threshold=0.6, model=judge_llm)
     known_faithful = _known_faithful_cases(golden_dataset)
     assert known_faithful, "golden dataset has no human_faithfulness==1.0 cases to regress on"
 

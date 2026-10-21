@@ -2,7 +2,7 @@
 `$GITHUB_STEP_SUMMARY` (see .github/workflows/ci.yml and docs/ci-setup.md).
 
 Why security findings get their own section instead of sharing the "failing cases" table: a
-`security`-suite failure is a different kind of finding (an attack got through) than a quality
+red-team case failure is a different kind of finding (an attack got through) than a quality
 metric dipping under threshold — the CLI's console output already makes that distinction (see
 `_render_results` in cli.py); the report mirrors it.
 """
@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from llm_eval_guard.core.runner import CaseResult, SuiteRunResult
 
-SECURITY_SUITE = "security"
 MAX_FAILING_CASES = 10
 
 _SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
@@ -61,7 +60,7 @@ def render_markdown(suite_results: list[SuiteRunResult]) -> str:
     lines.append("")
 
     security_failures = sorted(
-        (cr for suite_name, cr in entries if suite_name == SECURITY_SUITE and not cr.result.passed),
+        (cr for _, cr in entries if cr.is_security and not cr.result.passed),
         key=_severity_rank,
     )
     if security_failures:
@@ -81,7 +80,7 @@ def render_markdown(suite_results: list[SuiteRunResult]) -> str:
     other_failures = [
         (suite_name, cr)
         for suite_name, cr in entries
-        if suite_name != SECURITY_SUITE and not cr.result.passed
+        if not cr.is_security and not cr.result.passed
     ]
     if other_failures:
         lines.append("## Failing cases")
