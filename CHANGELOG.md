@@ -31,7 +31,9 @@ All notable changes to this project are documented in this file. Format follows
   diagrams; `SECURITY.md`; PyPI package metadata and a tag-triggered release workflow.
 - **Phase 8 (in progress):** `scripts/calibrate_judge.py --split dev|test` reports per-
   `failure_mode` agreement, wall-clock seconds per case, and a bootstrap 95% confidence interval
-  on agreement.
+  on agreement, plus per-metric judge cutoffs (`--faithfulness-threshold`, `--relevancy-threshold`)
+  and per-case scores in `--json`. Six local judges compared on the `dev` split
+  ([docs/judge-calibration.md](docs/judge-calibration.md)).
 
 ### Known limitations
 

@@ -29,9 +29,10 @@ from llm_eval_guard.metrics.deepeval_adapter import (
 DEFAULT_DATASET = Path(__file__).parent.parent / "datasets" / "golden" / "sample_rag_qa.jsonl"
 
 
-def _summary(calibration: MetricCalibration) -> dict[str, Any]:
+def _summary(calibration: MetricCalibration, judge_threshold: float) -> dict[str, Any]:
     ci = calibration.agreement_ci()
     return {
+        "judge_threshold": judge_threshold,
         "agreement": calibration.pass_fail_agreement,
         "agreement_ci95": list(ci) if ci else None,
         "mae": calibration.mean_absolute_error,
@@ -90,11 +91,20 @@ def main(argv: list[str] | None = None) -> int:
         help="Only score this split (default: all cases). Tune on dev; report test once.",
     )
     parser.add_argument("--min-agreement", type=float, default=0.8)
+    # Per metric because the judges err in opposite directions: faithfulness over-credits
+    # half-supported answers, relevancy under-scores good ones (docs/judge-calibration.md).
     parser.add_argument(
-        "--judge-threshold",
+        "--faithfulness-threshold",
         type=float,
         default=PASS_THRESHOLD,
-        help="Judge score counted as a pass (human labels always pass at 0.5). Tune on dev only.",
+        help="Judge faithfulness score counted as a pass (human labels always pass at 0.5). "
+        "Tune on dev only.",
+    )
+    parser.add_argument(
+        "--relevancy-threshold",
+        type=float,
+        default=PASS_THRESHOLD,
+        help="Judge answer_relevancy score counted as a pass. Tune on dev only.",
     )
     parser.add_argument("--json", action="store_true", help="Print a machine-readable summary")
     args = parser.parse_args(argv)
@@ -106,14 +116,14 @@ def main(argv: list[str] | None = None) -> int:
         "human_faithfulness",
         requires_context=True,
         split=args.split,
-        judge_threshold=args.judge_threshold,
+        judge_threshold=args.faithfulness_threshold,
     )
     relevancy = load_and_calibrate(
         args.dataset,
         answer_relevancy_metric(threshold=PASS_THRESHOLD_DEFAULT, model=model),
         "human_relevancy",
         split=args.split,
-        judge_threshold=args.judge_threshold,
+        judge_threshold=args.relevancy_threshold,
     )
 
     if args.json:
@@ -122,9 +132,8 @@ def main(argv: list[str] | None = None) -> int:
                 {
                     "model": model.get_model_name(),
                     "split": args.split or "all",
-                    "judge_threshold": args.judge_threshold,
-                    "faithfulness": _summary(faithfulness),
-                    "answer_relevancy": _summary(relevancy),
+                    "faithfulness": _summary(faithfulness, args.faithfulness_threshold),
+                    "answer_relevancy": _summary(relevancy, args.relevancy_threshold),
                 },
                 indent=2,
             )
@@ -132,7 +141,8 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(
             f"Judge model: {model.get_model_name()}  split: {args.split or 'all'}  "
-            f"judge_threshold: {args.judge_threshold}\n"
+            f"judge thresholds: faithfulness={args.faithfulness_threshold} "
+            f"answer_relevancy={args.relevancy_threshold}\n"
         )
         _print_report(faithfulness)
         print()
