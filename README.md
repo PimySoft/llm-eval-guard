@@ -47,6 +47,7 @@ on top of one (DeepEval today). What it adds on top of the raw eval engine:
 - **Regression testing** (prompt drift via snapshots) — [`llm_eval_guard/prompts/`](llm_eval_guard/prompts/)
 - **Adversarial/security testing** (prompt injection, PII, toxicity) — [`llm_eval_guard/security/`](llm_eval_guard/security/)
 - **CI quality gates & automated reporting** — [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+- **Test planning** (risk → check, and what's deliberately not covered) — [docs/test-strategy.md](docs/test-strategy.md)
 
 ## Quickstart
 
@@ -161,4 +162,4 @@ held-out split; the CI judge is an uncalibrated smoke check.
 [architecture](docs/architecture.md) · [thresholds](docs/thresholds.md) ·
 [datasets](docs/datasets.md) · [prompt-testing](docs/prompt-testing.md) ·
 [security](docs/security.md) · [ci-setup](docs/ci-setup.md) ·
-[judge-calibration](docs/judge-calibration.md)
+[judge-calibration](docs/judge-calibration.md) · [test-strategy](docs/test-strategy.md)

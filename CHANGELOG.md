@@ -48,6 +48,7 @@ All notable changes to this project are documented in this file. Format follows
   `demo_security` suite runs the red-team datasets against the demo app; findings in
   [docs/security.md](docs/security.md). Red-team failures now render as security findings in any
   suite (keyed on `attack_category`, not the suite name `security`).
+  [docs/test-strategy.md](docs/test-strategy.md): risk → check map and deliberate non-coverage.
 
 ### Fixed
 
