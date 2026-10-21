@@ -8,6 +8,13 @@ from __future__ import annotations
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _inner_run_config(pytester: pytest.Pytester) -> None:
+    """The inner run doesn't see this repo's pyproject.toml; without this, pytest-asyncio (pulled
+    in by deepeval) emits its unset-loop-scope deprecation warning in every inner session."""
+    pytester.makeini("[pytest]\nasyncio_default_fixture_loop_scope = function\n")
+
+
 def test_eval_metric_marker_gates_on_declared_threshold(pytester: pytest.Pytester) -> None:
     pytester.makepyfile(
         """

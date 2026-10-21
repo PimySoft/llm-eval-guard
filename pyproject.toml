@@ -98,6 +98,14 @@ disallow_incomplete_defs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+xfail_strict = true
+asyncio_default_fixture_loop_scope = "function"
+# A deprecation our own code triggers fails the run instead of scrolling past in the summary;
+# deepeval's own get_event_loop() call (live judge runs, Python 3.12) is upstream, not ours.
+filterwarnings = [
+    "error::DeprecationWarning:llm_eval_guard",
+    "ignore:There is no current event loop:DeprecationWarning:deepeval",
+]
 markers = [
     "eval_metric(name, threshold): declarative metric threshold assertion",
     "calibration: judge calibration check against human-labeled ground truth",

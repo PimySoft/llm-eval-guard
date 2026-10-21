@@ -12,6 +12,7 @@ in this module; that silently falls back to OpenAI.
 from __future__ import annotations
 
 import os
+import warnings
 from typing import Any, cast
 
 from deepeval.metrics import (
@@ -143,7 +144,9 @@ def toxicity_metric(threshold: float = 0.5, model: OllamaModel | None = None) ->
     would duplicate infrastructure this adapter already has for exactly this purpose. See
     plan.md Phase 4.3.
     """
-    return DeepEvalMetric(
-        ToxicityMetric(threshold=threshold, model=model or judge_model()),
-        name="toxicity",
-    )
+    # deepeval>=4.2.5 (our floor) scores toxicity 1 = clean, `threshold` a minimum — the direction
+    # this function's 0.5 already assumes — so its one-time "direction flipped" notice is noise.
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", "'ToxicityMetric' now scores", DeprecationWarning)
+        metric = ToxicityMetric(threshold=threshold, model=model or judge_model())
+    return DeepEvalMetric(metric, name="toxicity")

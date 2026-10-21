@@ -58,6 +58,8 @@ All notable changes to this project are documented in this file. Format follows
   `ComplianceMetric` ignores markers inside quoted spans or after a same-clause refusal ("I won't
   wire $500"); remaining marker-matching limits documented in
   [docs/security.md](docs/security.md#remaining-limits-of-marker-matching).
+  Test suite runs warning-free: `xfail_strict = true`, `asyncio_default_fixture_loop_scope` set,
+  and a `DeprecationWarning` from `llm_eval_guard` code is now a test error.
 
 ### Fixed
 

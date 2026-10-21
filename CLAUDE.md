@@ -57,7 +57,8 @@ integration tests are strict xfails (`tests/integration/_judge.py`). See `docs/j
   prose, no Markdown tables, no paragraph over ~4 lines, one "Why:" line for a non-obvious design
   choice rather than a discussion, don't restate what the code already shows. `docs/` stays flat,
   one file per concern, split a file past ~150 lines.
-- `xfail` must be `strict=True` with a `reason`; never add a non-strict one. Judge-dependent
+- `xfail` must be `strict=True` with a `reason`; never add a non-strict one (`xfail_strict = true`
+  in `pyproject.toml` makes strict the default). Judge-dependent
   ones use `xfail_under_ci_judge` (`tests/integration/_judge.py`).
 - `examples/` (Phase 9 demo app): ruff already covers it; add it to mypy `files` in
   `pyproject.toml` when created. No new heavy dependency (hand-rolled keyword/BM25 retriever);
