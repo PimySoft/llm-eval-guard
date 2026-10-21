@@ -35,6 +35,8 @@ class CaseComparison:
     reason: str | None
     failure_mode: str | None = None
     seconds: float = 0.0
+    # Only the judge's cutoff is tunable; the human cutoff is fixed by what the labels mean.
+    judge_threshold: float = PASS_THRESHOLD
 
     @property
     def human_pass(self) -> bool:
@@ -42,7 +44,7 @@ class CaseComparison:
 
     @property
     def judge_pass(self) -> bool:
-        return self.judge_score >= PASS_THRESHOLD
+        return self.judge_score >= self.judge_threshold
 
     @property
     def agrees(self) -> bool:
@@ -136,6 +138,7 @@ def calibrate(
     human_label_key: str,
     *,
     requires_context: bool = False,
+    judge_threshold: float = PASS_THRESHOLD,
 ) -> MetricCalibration:
     """Score every case that carries ``human_label_key`` in its metadata with ``metric``, and
     compare against that human label. Cases missing the label (or missing retrieval_context when
@@ -160,6 +163,7 @@ def calibrate(
                 reason=result.reason,
                 failure_mode=case.metadata.get("failure_mode"),
                 seconds=elapsed,
+                judge_threshold=judge_threshold,
             )
         )
     return calibration
@@ -172,9 +176,16 @@ def load_and_calibrate(
     *,
     requires_context: bool = False,
     split: str | None = None,
+    judge_threshold: float = PASS_THRESHOLD,
 ) -> MetricCalibration:
     """``split`` keeps only cases whose ``metadata["split"]`` matches (``None`` = all cases)."""
     cases = load_golden_dataset(dataset_path)
     if split is not None:
         cases = [c for c in cases if c.metadata.get("split") == split]
-    return calibrate(cases, metric, human_label_key, requires_context=requires_context)
+    return calibrate(
+        cases,
+        metric,
+        human_label_key,
+        requires_context=requires_context,
+        judge_threshold=judge_threshold,
+    )

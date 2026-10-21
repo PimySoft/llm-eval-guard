@@ -130,3 +130,21 @@ def test_load_and_calibrate_filters_by_split(tmp_path) -> None:
     calibration = load_and_calibrate(path, PerfectJudge(), "human_score", split="dev")
 
     assert [c.input for c in calibration.cases] == ["a"]
+
+
+def test_judge_threshold_moves_only_the_judge_cutoff() -> None:
+    class ConstantJudge(PerfectJudge):
+        def evaluate(self, case: EvalCase) -> MetricResult:
+            return MetricResult(metric_name=self.name, score=0.67, passed=True, reason=None)
+
+    cases = [
+        EvalCase(input="good", actual_output="x", metadata={"human_score": 1.0}),
+        EvalCase(input="partial", actual_output="y", metadata={"human_score": 0.0}),
+        EvalCase(input="borderline", actual_output="z", metadata={"human_score": 0.5}),
+    ]
+
+    lenient = calibrate(cases, ConstantJudge(), "human_score")
+    strict = calibrate(cases, ConstantJudge(), "human_score", judge_threshold=0.8)
+
+    assert [c.agrees for c in lenient.cases] == [True, False, True]
+    assert [c.agrees for c in strict.cases] == [False, True, False]

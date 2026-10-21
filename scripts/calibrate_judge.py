@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from llm_eval_guard.core.calibration import MetricCalibration, load_and_calibrate
+from llm_eval_guard.core.calibration import PASS_THRESHOLD, MetricCalibration, load_and_calibrate
 from llm_eval_guard.metrics.deepeval_adapter import (
     PASS_THRESHOLD_DEFAULT,
     answer_relevancy_metric,
@@ -42,6 +42,16 @@ def _summary(calibration: MetricCalibration) -> dict[str, Any]:
             mode: {"agreement": agreement, "n": n}
             for mode, (agreement, n) in calibration.per_failure_mode().items()
         },
+        "cases": [
+            {
+                "input": c.input,
+                "failure_mode": c.failure_mode,
+                "human_score": c.human_score,
+                "judge_score": c.judge_score,
+                "seconds": c.seconds,
+            }
+            for c in calibration.cases
+        ],
     }
 
 
@@ -80,6 +90,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Only score this split (default: all cases). Tune on dev; report test once.",
     )
     parser.add_argument("--min-agreement", type=float, default=0.8)
+    parser.add_argument(
+        "--judge-threshold",
+        type=float,
+        default=PASS_THRESHOLD,
+        help="Judge score counted as a pass (human labels always pass at 0.5). Tune on dev only.",
+    )
     parser.add_argument("--json", action="store_true", help="Print a machine-readable summary")
     args = parser.parse_args(argv)
 
@@ -90,12 +106,14 @@ def main(argv: list[str] | None = None) -> int:
         "human_faithfulness",
         requires_context=True,
         split=args.split,
+        judge_threshold=args.judge_threshold,
     )
     relevancy = load_and_calibrate(
         args.dataset,
         answer_relevancy_metric(threshold=PASS_THRESHOLD_DEFAULT, model=model),
         "human_relevancy",
         split=args.split,
+        judge_threshold=args.judge_threshold,
     )
 
     if args.json:
@@ -104,6 +122,7 @@ def main(argv: list[str] | None = None) -> int:
                 {
                     "model": model.get_model_name(),
                     "split": args.split or "all",
+                    "judge_threshold": args.judge_threshold,
                     "faithfulness": _summary(faithfulness),
                     "answer_relevancy": _summary(relevancy),
                 },
@@ -111,7 +130,10 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
     else:
-        print(f"Judge model: {model.get_model_name()}  split: {args.split or 'all'}\n")
+        print(
+            f"Judge model: {model.get_model_name()}  split: {args.split or 'all'}  "
+            f"judge_threshold: {args.judge_threshold}\n"
+        )
         _print_report(faithfulness)
         print()
         _print_report(relevancy)
