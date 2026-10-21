@@ -20,7 +20,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 DOCS_DIR = Path(__file__).resolve().parent / "docs"
 PROMPTS_DIR = _REPO_ROOT / "prompts"
 
-TOP_K = 3
+TOP_K = 1  # one chunk is enough for most questions and halves prompt size
 # Why a different default from the judge: the app under test and the model grading it are
 # separate roles; a small generator is also what makes the red-team findings realistic.
 DEFAULT_MODEL = "qwen2.5:3b"
