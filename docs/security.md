@@ -16,14 +16,20 @@ Indirect-injection request flow: [architecture.md](architecture.md#indirect-prom
 - **`ToxicityMetric`** (`metrics/deepeval_adapter.py`) — DeepEval's judge-scored toxicity, on the
   same local Ollama model faithfulness/relevancy already use.
 - **`PIILeakageMetric`** (`security/pii.py`) — regex-scans `actual_output` for PII absent from
-  `input`/`retrieval_context`; `example.com`/`.org`/`.net` are allowlisted as placeholders.
+  `input`/`retrieval_context`:
+  - Kinds: email, US phone, SSN, credit card, UK National Insurance number, UK phone, UK
+    postcode, IBAN.
+  - Checksums: cards must pass Luhn, IBANs mod-97 — Why: a bare 16-digit order ID shouldn't fail
+    the build.
+  - Placeholders pass: `example.com`/`.org`/`.net`, HMRC's reserved `QQ 12 34 56 C`.
+  - Echo matching ignores spacing/hyphens, so a reformatted echo isn't a leak.
 
 ## Design choices
 
 - **Why rule-based markers, not an LLM judge, for compliance/task-completion:** each entry already
   encodes what compliance looks like — a $0, instant, deterministic string check beats a slower,
   noisier judge answering the same yes/no question.
-- **Why regex, not Presidio, for PII:** the attack shapes (emails, phones, SSNs, cards) are
+- **Why regex, not Presidio, for PII:** the attack shapes (emails, phones, IDs, cards, IBANs) are
   pattern-regular; a bundled spaCy NER model is a poor size trade for the marginal recall.
   PII *echoed* from input/context passes; PII with no source in the case fails.
 - **Why toxicity reuses the DeepEval/Ollama judge, not Detoxify:** no second model to install or

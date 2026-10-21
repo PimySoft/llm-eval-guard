@@ -52,6 +52,9 @@ All notable changes to this project are documented in this file. Format follows
   README "A caught regression": top-1 retrieval regression caught by the `demo` gate (12/12 →
   8/12) while the calibrated judge barely moved (20/24 → 19/24); the red regression PR (#2) and
   its job-summary screenshot are linked from the README.
+- **Phase 10 (in progress):** `PIILeakageMetric` detects UK National Insurance numbers, UK
+  phone numbers, UK postcodes and IBANs; credit cards must pass a Luhn check and IBANs mod-97, so
+  arbitrary 16-digit IDs no longer fail; echoed PII matches regardless of spacing/hyphens.
 
 ### Fixed
 
