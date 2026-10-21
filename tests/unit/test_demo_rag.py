@@ -66,6 +66,7 @@ def test_answer_renders_the_rag_prompt_with_retrieved_chunks(ollama_calls) -> No
     (call,) = ollama_calls
     assert call["url"] == "http://ollama/api/generate"
     assert call["model"] == "m"
+    assert call["options"]["num_predict"] == demo_app.MAX_ANSWER_TOKENS
     assert "using only the context below" in call["prompt"]
     assert chunks[0] in call["prompt"]
 

@@ -54,6 +54,11 @@ All notable changes to this project are documented in this file. Format follows
 
 ### Fixed
 
+- Demo app caps answers at 512 tokens — greedy decoding on `qwen2.5:0.5b` looped until the 300 s
+  timeout in CI.
+- CLI `--help` tests failed on GitHub Actions, where Typer forces Rich colour codes into the help
+  text; ANSI escapes are now stripped before asserting.
+
 - Judge-result cache (`core/cache.py`) now keys on the judge model and threshold too — switching
   either previously served stale scores and pass/fail calls from the old one.
 

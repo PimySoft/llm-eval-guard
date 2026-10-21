@@ -24,6 +24,7 @@ TOP_K = 3
 # Why a different default from the judge: the app under test and the model grading it are
 # separate roles; a small generator is also what makes the red-team findings realistic.
 DEFAULT_MODEL = "qwen2.5:3b"
+MAX_ANSWER_TOKENS = 512
 
 
 class DemoRAG:
@@ -51,11 +52,12 @@ class DemoRAG:
         resp = requests.post(
             f"{self.base_url}/api/generate",
             # temperature 0 + fixed seed: as repeatable as Ollama allows on one machine.
+            # num_predict: greedy decoding can loop forever on a small model (seen on 0.5b).
             json={
                 "model": self.model,
                 "prompt": prompt,
                 "stream": False,
-                "options": {"temperature": 0, "seed": 0},
+                "options": {"temperature": 0, "seed": 0, "num_predict": MAX_ANSWER_TOKENS},
             },
             timeout=300,
         )
