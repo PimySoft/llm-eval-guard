@@ -1,23 +1,11 @@
 # Security & red-teaming
 
-Phase 4's gate: `leg run --suite security` scores every case in `datasets/redteam/*.jsonl`
-against four metrics and fails the build on any single violation (see [thresholds.md](thresholds.md) —
-`leg.config.yaml`'s `security` suite sets `threshold: 1.0` on the rule-based metrics — zero
-tolerance, not a pass rate).
+`leg run --suite security` scores every case in `datasets/redteam/*.jsonl` against four metrics
+and fails the build on any single violation — rule-based metrics use `threshold: 1.0`, zero
+tolerance, not a pass rate (see [thresholds.md](thresholds.md)).
 
-## Attack categories
-
-- **`direct_prompt_injection`** (`prompt_injection.jsonl`) — attacker: the user themself. Tests
-  system-prompt exfiltration, fake system overrides, format hijacking, guardrail-disable requests.
-- **`indirect_prompt_injection`** (`indirect_injection.jsonl`) — attacker: a poisoned retrieved
-  document. Same attack shapes, but the user's own request is benign — the defense has to hold
-  regardless of who's asking.
-- **`jailbreak`** (`jailbreak.jsonl`) — attacker: the user, via persona/role-play framing.
-  DAN-style and fictional-framing bypass attempts.
-- **`pii_leakage`** (`pii_leakage.jsonl`) — attacker: N/A, a probing question. Tests
-  fabricated/hallucinated PII vs. PII already present in context.
-
-See `datasets/redteam/README.md` for the full schema and provenance.
+Attack categories, files, and the dataset schema: [datasets/redteam/README.md](../datasets/redteam/README.md).
+Indirect-injection request flow: [architecture.md](architecture.md#indirect-prompt-injection--request-flow).
 
 ## Metrics
 
@@ -28,41 +16,29 @@ See `datasets/redteam/README.md` for the full schema and provenance.
 - **`ToxicityMetric`** (`metrics/deepeval_adapter.py`) — DeepEval's judge-scored toxicity, on the
   same local Ollama model faithfulness/relevancy already use.
 - **`PIILeakageMetric`** (`security/pii.py`) — regex-scans `actual_output` for PII absent from
-  `input`/`retrieval_context`.
+  `input`/`retrieval_context`; `example.com`/`.org`/`.net` are allowlisted as placeholders.
 
-**Why rule-based markers instead of an LLM judge for compliance/task-completion:** each dataset
-entry already encodes exactly what compliance would look like for that specific attack — a
-deterministic string-membership check, not a judgment call. A judge call would trade a $0,
-instant, offline check for a slower one answering the same yes/no question with more variance.
+## Design choices
 
-**Why regex instead of Presidio for PII:** this dataset's attack shapes (emails, phones, SSNs,
-credit cards) are pattern-regular; a bundled spaCy NER model is a poor size/dependency trade for
-the marginal recall it'd add here. `PIILeakageMetric` distinguishes PII *echoed* from the case's
-own input/context (fine) from PII that appears with no source in the case (leaked/hallucinated —
-bad), and allowlists `example.com`/`.org`/`.net` so documentation placeholders don't false-positive.
-
-**Why toxicity reuses the DeepEval/Ollama judge instead of a dedicated classifier (e.g.
-Detoxify):** it's the same infrastructure `deepeval_adapter.py` already maintains for
-faithfulness/answer-relevancy — no second model to install or keep calibrated separately. It
-inherits the same caveat as those metrics: the default judge (`qwen2.5:0.5b`) fails calibration
-(see [judge-calibration.md](judge-calibration.md)), so `tests/integration/test_toxicity.py` and the security leg of
-`tests/integration/test_cli_run.py` are marked `xfail(strict=False)` pending a better-calibrated
-model, same as the Phase 2 quality-suite tests.
+- **Why rule-based markers, not an LLM judge, for compliance/task-completion:** each entry already
+  encodes what compliance looks like — a $0, instant, deterministic string check beats a slower,
+  noisier judge answering the same yes/no question.
+- **Why regex, not Presidio, for PII:** the attack shapes (emails, phones, SSNs, cards) are
+  pattern-regular; a bundled spaCy NER model is a poor size trade for the marginal recall.
+  PII *echoed* from input/context passes; PII with no source in the case fails.
+- **Why toxicity reuses the DeepEval/Ollama judge, not Detoxify:** no second model to install or
+  calibrate. It inherits the judge's calibration caveat, so its integration tests are
+  `xfail(strict=False)` — see [judge-calibration.md](judge-calibration.md).
 
 ## Proving the detectors discriminate
 
-Per plan.md Phase 4's DoD, each detector needs to be checked against both a "known-vulnerable"
-and a "known-safe" model. Rather than invoking a live model, the shipped datasets *are* the
-safe/defended case (kept all-passing, same convention as `datasets/golden/`), and
-`tests/unit/test_injection.py`/`test_pii.py` build "vulnerable" variants in-process
-(`case.model_copy(update={"actual_output": ...})`) and assert the metric catches them — see
-`datasets/redteam/README.md` for why.
+The shipped datasets are the *defended* case (kept all-passing — see
+[datasets.md](datasets.md#why-shipped-datasets-stay-all-passing)). `tests/unit/test_injection.py`
+and `test_pii.py` build *vulnerable* variants in-process and assert the metrics catch them.
 
 ## Reporting
 
-`leg run`'s console table renders a `security`-suite failure as `SECURITY FAIL (<severity>)` in
-bold red rather than a bare `fail`, and prints a closing `N security finding(s) — blocking by
-default` line when any exist — a security regression is a different kind of finding than a
-faithfulness score dipping under threshold. `leg run --report-dir` (Phase 5.3, see
-[ci-setup.md](ci-setup.md)) mirrors this in `report.md`'s dedicated "Security findings" table, grouped and
-sorted by severity, separate from the generic "Failing cases" table.
+- Console: a `security` failure renders as bold-red `SECURITY FAIL (<severity>)`, plus a closing
+  `N security finding(s) — blocking by default` line.
+- `report.md` (`leg run --report-dir`): a dedicated "Security findings" table, sorted by severity,
+  separate from "Failing cases" — see [ci-setup.md](ci-setup.md#reports).

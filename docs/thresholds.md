@@ -7,18 +7,16 @@ rule-based/schema metrics).
 
 ## How enforcement works
 
-`MetricResult.passed` is decided once, inside the metric itself, against its `threshold` — the
-CLI never re-derives pass/fail from a raw score. `leg run` exits non-zero the moment *any* case
-in the run fails, for any metric, in any suite (`cli.py`'s `_render_results`). There's no separate
-`--fail-under` flag: a per-metric threshold *is* the fail-under bar, already enforced per case —
-adding a second, run-level cutoff would just be a second place the same decision could disagree
-with the first.
+- `MetricResult.passed` is decided once, inside the metric — the CLI never re-derives it.
+- `leg run` exits non-zero if *any* case fails, for any metric, in any suite.
+- **Why no `--fail-under` flag:** the per-metric threshold already is that bar; a run-level cutoff
+  would be a second place the same decision could disagree.
 
 ## Current thresholds (`leg.config.yaml`)
 
 - **`quality` / `faithfulness` — 0.8.** A RAG answer citing unsupported claims is a hallucination
   regression, not a matter of degree.
-- **`quality` / `answer_relevancy` — 0.8.** Same bar as faithfulness — see [security.md](security.md)
+- **`quality` / `answer_relevancy` — 0.8.** Same bar as faithfulness — see [datasets.md](datasets.md)
   for why they're scored separately.
 - **`schema` / schema validators — 1.0 (implicit).** A malformed/missing field either breaks the
   consumer or it doesn't — no partial credit.

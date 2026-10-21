@@ -21,8 +21,7 @@ flowchart LR
 ```
 
 `Metric.evaluate(case) -> MetricResult` (`core/metric.py`) is the one seam every backend
-implements — DeepEval today, Ragas as a stretch second adapter (deferred, see plan.md Phase 2.3),
-rule-based checks for security. `core/registry.py` maps a `leg.config.yaml` metric name string to
+implements — DeepEval today, Ragas as a deferred stretch adapter, rule-based checks for security. `core/registry.py` maps a `leg.config.yaml` metric name string to
 a concrete `Metric` instance; `core/runner.py` is the only thing that calls `.evaluate()`.
 
 ## Config → suite → metric
@@ -35,10 +34,9 @@ flowchart TD
     REG --> MET["Metric instance"]
 ```
 
-`leg run --suite <name>` looks up one `SuiteConfig`; `leg run` (no `--suite`, or `--suite all`)
-runs every suite in the file. `--fast` filters `MetricConfig.fast != true` entries out before
-`build_metric` ever runs — that's the whole mechanism behind the sub-second, network-free
-`leg run --fast` path (Phase 3.3).
+- `leg run --suite <name>` runs one suite; `leg run` (or `--suite all`) runs every suite.
+- `--fast` drops metrics without `fast: true` before `build_metric` runs — that's the whole
+  mechanism behind the sub-second, network-free `leg run --fast`.
 
 ## `leg.config.yaml` reference
 
@@ -61,11 +59,25 @@ file's own directory (`core/dataset.py`) — run `leg run` from the project root
 
 Contributors extend the framework at three seams without touching `core/`:
 
-- **Custom `Metric`** — subclass `llm_eval_guard.core.metric.Metric`, implement `name` and
-  `evaluate()`, register it in `core/registry.py`'s `_JUDGE_METRICS`/`_RULE_METRICS` (or reference
-  it directly if you're not going through `leg.config.yaml`). See
-  `llm_eval_guard/metrics/deepeval_adapter.py` for the reference implementation and
-  [CONTRIBUTING.md](../CONTRIBUTING.md).
+- **Custom `Metric`** — subclass `Metric`, implement `name` and `evaluate()`, register it in
+  `core/registry.py`'s `_JUDGE_METRICS`/`_RULE_METRICS` (or use it directly, outside
+  `leg.config.yaml`). Reference implementation: `metrics/deepeval_adapter.py`.
+
+  ```python
+  from llm_eval_guard.core.metric import Metric
+  from llm_eval_guard.core.models import EvalCase, MetricResult
+
+
+  class MyMetric(Metric):
+      @property
+      def name(self) -> str:
+          return "my_metric"
+
+      def evaluate(self, case: EvalCase) -> MetricResult:
+          score = ...  # your scoring logic
+          return MetricResult(metric_name=self.name, score=score, passed=score >= self.threshold)
+  ```
+
 - **Custom schema** — no code change needed: point a `schema:` metric entry at any
   `pydantic.BaseModel` subclass on your Python path (`schema:your_pkg.models:YourSchema`). See
   `llm_eval_guard/schema/models.py` for the shipped examples and `schema/validation.py` for
@@ -74,11 +86,9 @@ Contributors extend the framework at three seams without touching `core/`:
   takes any directory of `{name}.j2` + `{name}.meta.yaml` pairs; point it at your own prompts
   directory to get contract + drift-snapshot testing for free (see
   [prompt-testing.md](prompt-testing.md)).
-- **Custom PII/toxicity backend** — `PIILeakageMetric` (`security/pii.py`) and the toxicity
-  adapter (`metrics/deepeval_adapter.py`) both implement the plain `Metric` interface; swap either
-  for e.g. a Presidio- or Detoxify-backed implementation by writing a new `Metric` and pointing
-  `leg.config.yaml` at it — the rest of the pipeline (runner, reporting, CI gate) doesn't change.
-  See [security.md](security.md) for why regex/local-judge were chosen as the $0-cost defaults.
+- **Custom PII/toxicity backend** — both are plain `Metric`s; write e.g. a Presidio- or
+  Detoxify-backed `Metric` and point `leg.config.yaml` at it. Nothing downstream changes. Why the
+  defaults are regex/local-judge: [security.md](security.md).
 
 ## Indirect prompt injection — request flow
 
@@ -102,8 +112,6 @@ sequenceDiagram
     Metric-->>CI: fail if the injected instruction was\nfollowed, or if the real task was dropped
 ```
 
-`datasets/redteam/indirect_injection.jsonl` cases carry the poisoned text inside
-`retrieval_context`, not `input` — the user's own request stays benign, so a defense that only
-checks the user's literal words would miss this attack category entirely. See
-`llm_eval_guard/security/injection.py` and [security.md](security.md) for the metric
-implementations.
+**Why a separate category from direct injection:** the poisoned text sits in `retrieval_context`,
+not `input`. The user's request is benign, so a defense that only checks the user's words misses
+it entirely. Metrics: `security/injection.py`, [security.md](security.md).

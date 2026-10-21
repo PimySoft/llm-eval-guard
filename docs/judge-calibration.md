@@ -37,14 +37,9 @@ Measured against the 15-case golden set (`--min-agreement 0.8`, the default):
 Both fail the 80% bar — badly. Negative Pearson r means the judge's scores are, if anything,
 *inversely* related to the human labels on this set: not just noisy, actively unreliable.
 
-**Why `qwen2.5:0.5b` is still the shipped default despite failing its own calibration bar:** it's
-the model that keeps `eval-suite` runnable in reasonable time on a free, CPU-only GitHub Actions
-runner (see the $0 cost policy in `plan.md`) — but shipping a known-failing judge as the default
-would be dishonest if it were silently trusted. It isn't: `scripts/calibrate_judge.py` exits 1 on
-it, and the example regression suite (`tests/integration/test_faithfulness.py`,
-`test_answer_relevancy.py`) is marked `xfail` against it for exactly this reason, with a pointer
-back to this file. This is the calibration gate doing its job — catching a bad judge instead of
-silently trusting it.
+**Why it's still the shipped default:** it's what runs in reasonable time on a free, CPU-only
+Actions runner. It's never *silently* trusted — `calibrate_judge.py` exits 1 on it, and the
+judge-scored integration tests are marked `xfail` with a pointer back here.
 
 ## Known failure modes (observed)
 
@@ -79,12 +74,8 @@ which is exactly what near-zero/negative correlation means in practice.
 Don't trust `qwen2.5:0.5b` (or any judge) for real gating decisions without a calibration run that
 clears your bar. To get a usable judge:
 
-1. Re-run with a larger model: `python scripts/calibrate_judge.py --model llama3.2:3b` (the size
-   originally suggested in `plan.md` — untested in this environment; pulling a 2GB model and
-   running multi-step structured-output calls on it needs meaningfully more CPU/time than this
-   project's dev sandbox had available. `llama3.2:1b` was attempted here and timed out past 240s
-   per call on this sandbox's CPU — that's a sandbox resource constraint, not necessarily a verdict
-   on the model itself).
+1. Re-run with a larger model: `python scripts/calibrate_judge.py --model llama3.2:3b`
+   (untested; `llama3.2:1b` timed out on the CPU it was tried on).
 2. Set `LEG_JUDGE_MODEL` to whatever passes, and re-run calibration whenever you change the model
    or prompt — model choice is a tuning decision this script backs with a number, not a guess.
 3. If no local model clears the bar on your hardware, the bring-your-own-key adapters (OpenAI/

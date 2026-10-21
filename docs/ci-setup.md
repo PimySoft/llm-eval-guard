@@ -14,7 +14,7 @@ jobs.
   `live_llm`-marked tests auto-skip without Ollama (`pytest_plugin.py`), so this job stays fast
   and network-free without any marker filtering.
 - **`schema-drift`** — no matrix, no Ollama needed. Runs `leg run --fast` — schema validation +
-  prompt-drift snapshots (Phase 3.3), no network calls.
+  prompt-drift snapshots, no network calls.
 - **`eval-suite`** — no matrix, needs Ollama. Runs `pytest -m live_llm` over the quality-metric
   tests, then `leg run --suite quality --report-dir` for the job-summary report.
 - **`security-suite`** — no matrix, needs Ollama. Same pattern as `eval-suite`, scoped to the
@@ -22,21 +22,15 @@ jobs.
 
 ## Why `eval-suite`/`security-suite` gate on pytest, not a raw `leg run` exit code
 
-The shipped default judge (`qwen2.5:0.5b`) fails its own calibration bar — see
-[judge-calibration.md](judge-calibration.md). `leg run --suite quality`'s exit code would
-therefore be noisy: near-random pass/fail on cases the judge can't actually discriminate, not a
-meaningful signal. `tests/integration/test_faithfulness.py`, `test_answer_relevancy.py`, and the
-judge-scored leg of `test_cli_run.py`/`test_toxicity.py` already encode this as
-`xfail(strict=False)` (Phase 2.6). Running those through `pytest` in CI keeps the required check
-green *unless something other than known judge noise breaks* — a real regression (the plumbing
-breaking, an xfail unexpectedly passing under `strict`, etc.) still fails the job. A `leg run`
-invocation still runs afterward (`if: always()`) purely to produce the report — its own exit code
-is discarded (`|| true`), since gating on it would reintroduce the same noise.
-
-Once a judge model clears calibration (`scripts/calibrate_judge.py --model <bigger model>`), swap
-`LEG_JUDGE_MODEL` in the workflow and drop the `xfail` markers — `leg run`'s exit code becomes a
-trustworthy gate at that point and the `pytest -m live_llm` steps can be replaced with a direct
-`leg run --suite quality` / `--suite security` call.
+- **The problem:** the default judge (`qwen2.5:0.5b`) fails calibration
+  ([judge-calibration.md](judge-calibration.md)), so `leg run`'s exit code is near-random on
+  judge-scored metrics.
+- **The workaround:** the judge-scored integration tests are `xfail(strict=False)`. Running them
+  via `pytest` keeps the check green on known judge noise but still fails on real breakage.
+- **`leg run` still runs** (`if: always()`, exit code discarded with `|| true`) — only to produce
+  the report.
+- **Once a judge clears calibration:** set `LEG_JUDGE_MODEL` in the workflow, drop the `xfail`
+  markers, and gate directly on `leg run --suite quality` / `--suite security`.
 
 ## Ollama on the runner
 
@@ -61,14 +55,12 @@ enough that gating them adds more complexity than it saves.
 
 ## Reports
 
-Every `eval-suite`/`security-suite` run writes `reports/<job>/report.md` + `report.json`
-(`llm_eval_guard/reporting/`, Phase 5.3) via `leg run --report-dir`. The Markdown file is appended
-to `$GITHUB_STEP_SUMMARY` so results are visible on the job's summary page without opening logs;
-the full `reports/<job>/` directory (Markdown + JSON) is uploaded as a workflow artifact for
-post-hoc debugging. Posting the same summary as a PR comment (`actions/github-script`, deduping
-against a prior comment) is listed as optional in plan.md Phase 5.3 and isn't implemented — the
-job summary already covers the "visible without opening logs" goal without needing a
-`pull-requests: write` permission grant.
+`eval-suite`/`security-suite` run `leg run --report-dir`, writing `reports/<job>/report.md` +
+`report.json`:
+
+- `report.md` is appended to `$GITHUB_STEP_SUMMARY` — visible on the job page, no logs needed.
+- `reports/<job>/` is uploaded as a workflow artifact for debugging.
+- No PR comment: the job summary covers the same need without a `pull-requests: write` grant.
 
 ## Branch protection
 
@@ -84,9 +76,8 @@ protection rule for `main`:
 
 ## Cost
 
-Everything above runs at $0: GitHub-hosted Actions minutes are free and unlimited for public
-repos (see plan.md's cost policy — this is also why the repo stays public), and the judge model is
-a local Ollama pull, never a paid API. There is nothing to budget.
+$0: Actions minutes are free and unlimited for public repos (why the repo stays public), and the
+judge is a local Ollama model, never a paid API.
 
 ## Release workflow (`.github/workflows/release.yml`)
 

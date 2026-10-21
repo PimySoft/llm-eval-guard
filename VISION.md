@@ -16,30 +16,32 @@ faithfulness regressions, broken output contracts, and prompt-injection exposure
 
 ## Non-goals
 
-- Not a full observability/tracing platform (no live production monitoring, no dashboards beyond CI reports) — see [Grafana/LangSmith/Arize] for that.
+- Not a full observability/tracing platform (no live production monitoring, no dashboards beyond CI reports) — use LangSmith, Arize, or Grafana for that.
 - Not a hosted product — runs entirely in the user's own CI, no SaaS backend, no account required.
 - Not a prompt-engineering IDE — it tests prompts/outputs, it doesn't help author them.
 - Not a replacement for DeepEval/Ragas — it's a CI-gating and reporting layer built on top of one.
 
 ## Architectural decisions (locked for Phase 1+)
 
-| Decision | Choice | Why |
-|---|---|---|
-| Primary interface | Python package `llm_eval_guard`, CLI (`leg run`, `leg init`) + pytest plugin entry point | CLI for CI/scripted use, pytest plugin so teams can write `assert rag_case.faithfulness_score >= 0.8` directly in their own test suite |
-| Default LLM provider | **Ollama (local)** is the required path for v1 | Keeps the $0 cost policy real — no contributor or CI run needs a paid key to get a passing build |
-| Bring-your-own-key providers | OpenAI/Anthropic adapters, documented as opt-in only | Faster/higher-quality judging for users who want it, never required to run the suite |
-| Evaluation engine | **DeepEval** as the sole adapter for v1; Ragas is a stretch second adapter, added only after DeepEval path is complete end-to-end | Depth on one engine demos better than two half-finished integrations; a thin internal `Metric` interface keeps the door open for Ragas later without a rewrite |
-| License | Apache-2.0 | OSS tooling license with an explicit patent grant — standard for infra tools, signals it's safe to adopt inside a company |
-| Package name | `llm-eval-guard` | Confirmed available on PyPI (no existing project at this name) |
+- **Primary interface:** Python package `llm_eval_guard`, a CLI (`leg run`, `leg init`), and a
+  pytest plugin.
+  Why: the CLI serves CI and scripts; the plugin lets teams write `assert result.passed` in their
+  own test suite.
+- **Default LLM provider:** local Ollama, required for v1.
+  Why: keeps the $0 policy real — no contributor or CI run needs a paid key to pass.
+- **Bring-your-own-key providers:** OpenAI/Anthropic adapters, opt-in only.
+  Why: faster, better judging for those who want it, never required.
+- **Evaluation engine:** DeepEval only for v1; Ragas is a stretch adapter, added after DeepEval
+  works end-to-end.
+  Why: depth on one engine beats two half-finished ones; the `Metric` interface leaves room for
+  Ragas without a rewrite.
+- **License:** Apache-2.0.
+  Why: explicit patent grant, standard for infra tools, safe to adopt inside a company.
+- **Package name:** `llm-eval-guard`, confirmed free on PyPI.
 
-## Skills Demonstrated (final table ships in [README.md](README.md#skills-demonstrated))
+## Skills demonstrated
 
-- [x] Metric-based LLM/RAG evaluation (faithfulness, answer relevancy) — Phase 2
-- [x] Judge calibration / meta-evaluation against human-labeled ground truth — Phase 2.6
-- [x] Schema/contract testing for structured LLM output — Phase 3.1
-- [x] Regression testing via prompt-drift snapshots — Phase 3.2
-- [x] Adversarial/red-team testing: prompt injection (direct + indirect), jailbreaks, PII, toxicity — Phase 4
-- [x] CI quality gates with threshold enforcement and automated PR reporting — Phase 5
+All six target skills shipped — see [README.md](README.md#skills-demonstrated).
 
 ## Cost policy
 

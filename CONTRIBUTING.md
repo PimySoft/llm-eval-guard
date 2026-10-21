@@ -16,29 +16,25 @@ poetry run pre-commit install
 make test
 ```
 
-Requires Python `>=3.10,<3.13`. Requires [Ollama](https://ollama.com) installed locally with a
-pulled model (`ollama pull qwen2.5:0.5b`, or set `LEG_JUDGE_MODEL` to use another one) to run the
-`live_llm`-marked judge-model tests — everything else auto-skips them and stays green without
-Ollama installed. Re-run `python scripts/calibrate_judge.py` after changing the judge model (see
-docs/judge-calibration.md).
+- Python `>=3.10,<3.13`
+- [Ollama](https://ollama.com) — optional; only `live_llm`-marked judge tests need it, and they
+  auto-skip without it. `ollama pull qwen2.5:0.5b`, or set `LEG_JUDGE_MODEL` for another model.
+- Changed the judge model? Re-run `python scripts/calibrate_judge.py` — see
+  [docs/judge-calibration.md](docs/judge-calibration.md).
 
 ## Common tasks
 
-| Command | Does |
-|---|---|
-| `make lint` | Ruff lint |
-| `make format` | Ruff format |
-| `make typecheck` | mypy |
-| `make test` | pytest |
+- `make lint` — Ruff lint
+- `make format` — Ruff format
+- `make typecheck` — mypy
+- `make test` — pytest
 
 ## Adding a new metric adapter
 
-Implement `llm_eval_guard.core.metric.Metric` and normalize the underlying engine's result into
-`MetricResult`. See `llm_eval_guard/metrics/deepeval_adapter.py` for the reference implementation
-and [docs/architecture.md](docs/architecture.md#extension-points) for the other extension points
-(custom schema, prompt source, PII/toxicity backend).
+See [docs/architecture.md](docs/architecture.md#extension-points).
 
 ## Adding red-team content
 
 Every adversarial prompt added to `datasets/redteam/` must be tagged with `attack_category`,
-`severity`, and `expected_behavior`, and must not contain real PII — synthetic data only.
+`severity`, and `expected_behavior`, and must not contain real PII — synthetic data only. Schema:
+[datasets/redteam/README.md](datasets/redteam/README.md).

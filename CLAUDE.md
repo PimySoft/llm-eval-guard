@@ -45,10 +45,10 @@ calibration bar — see `docs/judge-calibration.md` before trusting its scores.
 - mypy strict on `llm_eval_guard/`; relaxed (`disallow_untyped_defs = false`) on `tests/`.
 - `.pre-commit-config.yaml` also runs trailing-whitespace/EOF-fixer/check-yaml/large-file/private-key
   checks — don't bypass with `--no-verify`.
-- Documentation policy (README, `docs/*.md`, code comments) per plan.md: bullets/tables over
-  prose, no paragraph over ~4 lines, one "Why:" line for a non-obvious design choice rather than a
-  discussion, don't restate what the code already shows. `docs/` stays flat, one file per concern,
-  split a file past ~150 lines.
+- Documentation policy (README, `docs/*.md`, code comments) per plan.md: bullet lists over
+  prose, no Markdown tables, no paragraph over ~4 lines, one "Why:" line for a non-obvious design
+  choice rather than a discussion, don't restate what the code already shows. `docs/` stays flat,
+  one file per concern, split a file past ~150 lines.
 
 ## Architecture (Phase 2+ design — see plan.md for exact phase gating)
 
@@ -76,7 +76,7 @@ Package layout (`llm_eval_guard/`):
   (`pii.py`, regex-based). Toxicity is a DeepEval-adapter metric (`metrics/deepeval_adapter.py`),
   not a `security/` module — see `docs/security.md`
 - `reporting/` — Markdown/JSON report generators, wired into `$GITHUB_STEP_SUMMARY`
-- `cli.py` — `leg` CLI (`leg run --suite <name> --config leg.config.yaml`, `leg init`); `leg run --fast` skips LLM-judge metrics for a pre-commit-speed schema/drift-only pass. `leg run` is implemented; `leg init` is still Phase 6.
+- `cli.py` — `leg` CLI (`leg run --suite <name> --config leg.config.yaml`, `leg init`); `leg run --fast` skips LLM-judge metrics for a pre-commit-speed schema/drift-only pass.
 
 A `pytest` plugin entry point (`llm_eval_guard.pytest_plugin`) exposes fixtures (`eval_client`,
 `judge_llm`, `golden_dataset`) to *downstream* repos that install this package — this is a second,

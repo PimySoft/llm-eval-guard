@@ -12,7 +12,7 @@ This isn't just a working tool — it's a portfolio piece and a learning exercis
 3. **Concise documentation.** See policy below — this cuts against the instinct to over-explain, which also serves goal 1 (recruiters don't read long docs).
 
 ### Documentation policy (applies to README, docs/*.md, and code comments for the whole project)
-- Every doc file: bullets/tables over prose, no paragraph over ~4 lines, no restating what the code already shows.
+- Every doc file: bullet lists over prose, no Markdown tables, no paragraph over ~4 lines, no restating what the code already shows.
 - Every non-obvious design choice gets exactly one "Why:" line, not a discussion.
 - `docs/` folder stays flat and short — one file per concern (architecture, thresholds, prompt-testing, ci-setup, datasets, judge-calibration). If a file exceeds ~150 lines, split it or cut it.
 - README is the single entry point recruiters will actually read — everything else is reference material one click away.
@@ -303,12 +303,11 @@ Goal: a README and docs set that lets a new adopter go from zero to a working qu
 
 ## Suggested Milestone Sequencing
 
-| Milestone | Phases | Outcome |
-|---|---|---|
-| M1 — Foundation | 0, 1 | Repo scaffolded, lint/pre-commit enforced |
-| M2 — Quality Engine | 2, 3 | Faithfulness/relevancy metrics + schema/prompt drift working locally |
-| M3 — Security Engine | 4 | Red-team suite operational |
-| M4 — Automation | 5 | CI gate live, blocking merges |
-| M5 — Public Launch | 6 | Docs complete, `v0.1.0` published |
+- **M1 — Foundation** (Phases 0–1): repo scaffolded, lint/pre-commit enforced.
+- **M2 — Quality Engine** (Phases 2–3): faithfulness/relevancy metrics and schema/prompt drift
+  working locally.
+- **M3 — Security Engine** (Phase 4): red-team suite operational.
+- **M4 — Automation** (Phase 5): CI gate live, blocking merges.
+- **M5 — Public Launch** (Phase 6): docs complete, `v0.1.0` published.
 
 Treat M1–M2 as the critical path — nothing in Phases 4–6 is meaningfully testable without the `Metric`/`EvalCase` abstraction and the local runner from Phase 2–3 in place.

@@ -1,26 +1,26 @@
 # Red-team datasets
 
-One JSON object per line, loaded the same way as `datasets/golden/` (via
-`llm_eval_guard.core.load_dataset_cases`). Every entry is an `EvalCase`: `input`, `actual_output`
-(a recorded response from a **properly-defended** pipeline — these are regression fixtures, kept
-all-passing on purpose, same rationale as `datasets/golden/sample_tool_calls.jsonl`), optional
-`retrieval_context` (a simulated poisoned document for indirect-injection cases), and `metadata`.
-
-**Where the failure modes are demonstrated instead:** `tests/unit/test_injection.py` and
-`tests/unit/test_pii.py` construct "vulnerable" variants of these cases in-process
-(`case.model_copy(update={"actual_output": ...})`) and assert the metrics catch them — so
-detection is proven without ever putting a failing case in the repo's own dogfood
-`leg.config.yaml` (see plan.md Phase 4, DoD).
+- One `EvalCase` per line (`input`, `actual_output`, optional `retrieval_context`, `metadata`),
+  loaded via `llm_eval_guard.core.load_dataset_cases`.
+- `actual_output` is a recorded response from a **properly-defended** pipeline — these files stay
+  all-passing; see [docs/datasets.md](../../docs/datasets.md#why-shipped-datasets-stay-all-passing).
+- Metrics that score them: [docs/security.md](../../docs/security.md).
 
 ## `metadata` keys
 
-| Key | Type | Required | Meaning |
-|---|---|---|---|
-| `attack_category` | `str` | yes | `direct_prompt_injection`, `indirect_prompt_injection`, `jailbreak`, `pii_leakage` |
-| `severity` | `str` | yes | `low`, `medium`, `high`, `critical` |
-| `expected_behavior` | `str` | yes | One-line description of the required safe behavior |
-| `compliance_markers` | `list[str]` | injection/jailbreak only | Substrings that, if present in `actual_output`, mean the model *complied* with the attack — read by `ComplianceMetric` |
-| `task_markers` | `list[str]` | injection/jailbreak only | Substrings expected if the model still completed the real task — read by `TaskCompletionMetric` |
+Required on every entry:
+
+- `attack_category` (`str`) — `direct_prompt_injection`, `indirect_prompt_injection`,
+  `jailbreak`, or `pii_leakage`
+- `severity` (`str`) — `low`, `medium`, `high`, or `critical`
+- `expected_behavior` (`str`) — one line describing the required safe behavior
+
+Injection and jailbreak entries only:
+
+- `compliance_markers` (`list[str]`) — substrings that mean the model *complied* with the attack
+  if they appear in `actual_output`; read by `ComplianceMetric`
+- `task_markers` (`list[str]`) — substrings expected if the model still did the real task; read
+  by `TaskCompletionMetric`
 
 `pii_leakage.jsonl` carries no `compliance_markers`/`task_markers`: `PIILeakageMetric` scans
 `actual_output` directly for PII patterns absent from `input`/`retrieval_context`, no markers
@@ -28,16 +28,14 @@ needed.
 
 ## Files
 
-- `prompt_injection.jsonl` — direct injection: the attack is embedded in the user's own message
-  (system-prompt exfiltration, fake system overrides, format hijacking, guardrail-disable requests).
-- `indirect_injection.jsonl` — the attack is embedded in *retrieved* content (a poisoned
-  document/support ticket/wiki page), simulating a compromised RAG source rather than a malicious
-  user. **Why treat this separately from direct injection:** the attacker here isn't the person
-  asking the question — the defense has to hold even when the user's own request is completely
-  benign, which is a different threat model than "the user is attacking me."
-- `jailbreak.jsonl` — persona/role-play bypass attempts (DAN-style, fictional framing).
-- `pii_leakage.jsonl` — prompts that could elicit fabricated or leaked PII, plus false-positive
-  regression fixtures (echoed PII, `user@example.com` placeholders).
+- **`prompt_injection.jsonl`** — direct injection; the attacker is the user. Covers system-prompt
+  exfiltration, fake overrides, format hijacking, and guardrail-disable requests.
+- **`indirect_injection.jsonl`** — the attack hides in a poisoned retrieved document while the
+  user's request stays benign. See
+  [architecture.md](../../docs/architecture.md#indirect-prompt-injection--request-flow).
+- **`jailbreak.jsonl`** — persona and role-play bypasses (DAN-style, fictional framing).
+- **`pii_leakage.jsonl`** — probing questions that could elicit fabricated or leaked PII, plus
+  false-positive fixtures (echoed PII, `example.com` placeholders).
 
 ## Provenance & licensing
 

@@ -8,10 +8,8 @@
 > A CI/CD quality gate for LLM and RAG applications — scores outputs against quality, schema,
 > and security metrics, and fails a pull request when thresholds aren't met.
 
-Status: **Phases 1–6 core path complete** (metric framework, schema validation, prompt-drift
-testing, `leg` CLI, the red-team security suite, CI/CD gating with Markdown/JSON reporting, and
-this documentation pass). See [VISION.md](VISION.md) for the project charter and
-[plan.md](plan.md) for the full build roadmap.
+Status: feature-complete for `v0.1.0` (pre-release). Charter: [VISION.md](VISION.md) · roadmap:
+[plan.md](plan.md).
 
 ## Why LLM-Eval-Guard
 
@@ -43,12 +41,12 @@ on top of one (DeepEval today). What it adds on top of the raw eval engine:
 
 ## Skills demonstrated
 
-- **Metric-based LLM/RAG evaluation** — [`llm_eval_guard/metrics/`](llm_eval_guard/metrics/), Phase 2
-- **Judge calibration** (meta-evaluation vs. human labels) — [docs/judge-calibration.md](docs/judge-calibration.md), Phase 2.6
-- **Schema/contract testing** — [`llm_eval_guard/schema/`](llm_eval_guard/schema/), Phase 3.1
-- **Regression testing** (prompt drift via snapshots) — [`llm_eval_guard/prompts/`](llm_eval_guard/prompts/), Phase 3.2
-- **Adversarial/security testing** (prompt injection, PII, toxicity) — [`llm_eval_guard/security/`](llm_eval_guard/security/), Phase 4
-- **CI quality gates & automated reporting** — [`.github/workflows/ci.yml`](.github/workflows/ci.yml), Phase 5
+- **Metric-based LLM/RAG evaluation** — [`llm_eval_guard/metrics/`](llm_eval_guard/metrics/)
+- **Judge calibration** (meta-evaluation vs. human labels) — [docs/judge-calibration.md](docs/judge-calibration.md)
+- **Schema/contract testing** — [`llm_eval_guard/schema/`](llm_eval_guard/schema/)
+- **Regression testing** (prompt drift via snapshots) — [`llm_eval_guard/prompts/`](llm_eval_guard/prompts/)
+- **Adversarial/security testing** (prompt injection, PII, toxicity) — [`llm_eval_guard/security/`](llm_eval_guard/security/)
+- **CI quality gates & automated reporting** — [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
 
 ## Quickstart
 
@@ -84,38 +82,28 @@ def test_my_rag_answer_is_faithful(judge_llm):
     assert result.passed, result.reason
 ```
 
-## Configuration reference
+## Configuration
 
-`leg.config.yaml` at the project root drives every `leg run`. Full reference in
-[docs/architecture.md](docs/architecture.md#legconfigyaml-reference); the shape:
+`leg.config.yaml` at the project root drives every `leg run`:
 
-- `suites.<name>.dataset` — one JSONL path, or a list of them concatenated in order
-- `suites.<name>.metrics[].name` — a registry key (`faithfulness`, `toxicity`, `compliance`, ...)
-  or `schema:module.path:ClassName`
-- `suites.<name>.metrics[].threshold` — pass/fail cutoff, see [docs/thresholds.md](docs/thresholds.md)
-- `suites.<name>.metrics[].fast` — include this metric under `leg run --fast`? (only for checks
-  with no network call)
-- `judge.model` / `judge.base_url` — Ollama model tag / server URL; env vars `LEG_JUDGE_MODEL` /
-  `OLLAMA_BASE_URL` also work
+```yaml
+suites:
+  quality:
+    dataset: datasets/golden/sample_rag_qa.jsonl
+    metrics:
+      - name: faithfulness
+        threshold: 0.8
+judge:
+  model: qwen2.5:0.5b
+```
+
+Full key reference: [docs/architecture.md](docs/architecture.md#legconfigyaml-reference) ·
+threshold rationale: [docs/thresholds.md](docs/thresholds.md).
 
 ## Usage examples
 
-**Add a custom metric** — implement `Metric`, register it in `core/registry.py`:
-
-```python
-from llm_eval_guard.core.metric import Metric
-from llm_eval_guard.core.models import EvalCase, MetricResult
-
-
-class MyMetric(Metric):
-    @property
-    def name(self) -> str:
-        return "my_metric"
-
-    def evaluate(self, case: EvalCase) -> MetricResult:
-        score = ...  # your scoring logic
-        return MetricResult(metric_name=self.name, score=score, passed=score >= self.threshold)
-```
+**Add a custom metric or schema** — see
+[docs/architecture.md](docs/architecture.md#extension-points).
 
 **Add a custom red-team dataset entry** — append a line to `datasets/redteam/*.jsonl` tagged with
 `attack_category`, `severity`, and `expected_behavior` (see
@@ -156,24 +144,13 @@ failures in its own table — see [docs/security.md](docs/security.md).
 
 ## Development setup
 
-Prerequisites:
-
-- [Poetry](https://python-poetry.org/docs/#installation) — dependency management
-- [Ollama](https://ollama.com) — local, $0-cost LLM judge (required for the `live_llm`-marked
-  tests; everything else auto-skips them and stays green without it)
-  ```bash
-  ollama pull qwen2.5:0.5b
-  ```
-
 ```bash
-make install   # poetry install --extras deepeval
-poetry run pre-commit install
-make test
+make install && poetry run pre-commit install && make test
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full dev workflow, and
-[docs/judge-calibration.md](docs/judge-calibration.md) before trusting the default judge model's
-scores — it's measured, not assumed, and the measurement isn't flattering.
+Prerequisites (Poetry, optional Ollama) and the full workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
+Read [docs/judge-calibration.md](docs/judge-calibration.md) before trusting the default judge's
+scores — it's measured, and the measurement isn't flattering.
 
 ## Docs
 
