@@ -34,6 +34,8 @@ jobs:
             eval:
               - 'llm_eval_guard/**'
               - 'datasets/**'
+              - 'examples/**'
+              - 'prompts/**'
               - 'tests/**'
               - 'leg.config.yaml'
               - 'pyproject.toml'
@@ -132,6 +134,43 @@ jobs:
         with:
           name: eval-suite-report
           path: reports/eval-suite
+
+  demo-rag:
+    # Phase 9: the demo app (examples/demo_rag) answers its questions for real, then `leg run
+    # --suite demo` gates on its exit code. That suite is deterministic (context_recall), so
+    # unlike eval-suite it needs no judge and no xfails — any red is a real retrieval regression.
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.eval == 'true'
+    env:
+      OLLAMA_BASE_URL: http://localhost:11434
+      # The app's generator model; 0.5b (not the local 3b default) keeps a CPU runner fast, and
+      # the gated metric only reads retrieval, not the answer.
+      LEG_DEMO_MODEL: qwen2.5:0.5b
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-python-poetry
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON }}
+      - uses: ./.github/actions/setup-ollama
+        with:
+          model: ${{ env.LEG_DEMO_MODEL }}
+      - name: Cache generated answers (core/cache.py GenerationCache)
+        uses: actions/cache@v4
+        with:
+          path: .leg_cache
+          key: demo-cache-${{ hashFiles('examples/**', 'prompts/**') }}
+      - name: leg run --suite demo (gate)
+        run: poetry run leg run --suite demo --report-dir reports/demo
+      - name: Append to job summary
+        if: always()
+        run: cat reports/demo/report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-rag-report
+          path: reports/demo
 
   security-suite:
     # Same ci-judge rationale as eval-suite for the toxicity leg (the only judge-scored security

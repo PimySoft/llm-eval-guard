@@ -30,3 +30,12 @@ def test_run_security_suite_end_to_end() -> None:
 
     assert "leg run results" in result.stdout
     assert result.exit_code == 0
+
+
+def test_run_demo_suite_end_to_end() -> None:
+    """The Phase 9 demo app answers for real, then the deterministic `context_recall` gate runs —
+    must pass on main; the regression-demo branch (top-1 retrieval) makes it fail."""
+    result = runner.invoke(app, ["run", "--suite", "demo"])
+
+    assert "leg run results" in result.stdout
+    assert result.exit_code == 0

@@ -12,7 +12,9 @@ REPO_CONFIG = Path(__file__).parent.parent.parent / "leg.config.yaml"
 def test_load_config_parses_repo_config() -> None:
     config = load_config(REPO_CONFIG)
 
-    assert set(config.suites) == {"quality", "schema", "security"}
+    assert set(config.suites) == {"quality", "schema", "security", "demo", "demo_quality"}
+    assert config.suites["demo"].generator == "examples.demo_rag.app:generate"
+    assert config.suites["quality"].generator is None
     assert config.suites["quality"].dataset == "datasets/golden/sample_rag_qa.jsonl"
     assert config.suites["schema"].metrics[0].fast is True
     assert config.judge.model == "qwen2.5:7b"

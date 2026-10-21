@@ -8,13 +8,17 @@ resolves names to code, which is what makes `core/runner.py` and the CLI config-
 from __future__ import annotations
 
 import importlib
+import sys
 from collections.abc import Callable
-from typing import Any
+from pathlib import Path
+from typing import Any, cast
 
 from pydantic import BaseModel
 
 from llm_eval_guard.core.config import JudgeConfig, MetricConfig
 from llm_eval_guard.core.metric import Metric
+from llm_eval_guard.core.models import EvalCase
+from llm_eval_guard.metrics.context_recall import ContextRecallMetric
 from llm_eval_guard.metrics.deepeval_adapter import (
     answer_relevancy_metric,
     contextual_precision_metric,
@@ -54,20 +58,41 @@ _RULE_METRICS: dict[str, _RuleMetricFactory] = {
     "compliance": ComplianceMetric,
     "task_completion": TaskCompletionMetric,
     "pii_leakage": PIILeakageMetric,
+    "context_recall": ContextRecallMetric,
 }
 
 _SCHEMA_PREFIX = "schema:"
 
 
+Generator = Callable[[EvalCase], EvalCase]
+
+
+def _import_object(dotted: str, kind: str) -> Any:
+    """Resolve `module.path:name`, importable from the working directory like pytest's rootdir.
+
+    Why add the cwd: the `leg` console script's `sys.path` doesn't include it, so a project's
+    own modules (e.g. `examples.demo_rag.app`) would otherwise be unimportable from config.
+    """
+    module_path, _, attr = dotted.partition(":")
+    if not module_path or not attr:
+        raise ValueError(f"malformed {kind} reference {dotted!r} — expected 'module.path:name'")
+    cwd = str(Path.cwd())
+    if cwd not in sys.path:
+        sys.path.insert(0, cwd)
+    return getattr(importlib.import_module(module_path), attr)
+
+
+def load_generator(dotted: str) -> Generator:
+    """Resolve a suite's `generator` reference (see `SuiteConfig.generator`)."""
+    generator = _import_object(dotted, "generator")
+    if not callable(generator):
+        raise ValueError(f"generator {dotted!r} is not callable")
+    return cast(Generator, generator)
+
+
 def _import_schema(dotted: str) -> type[BaseModel]:
     """Resolve `module.path:ClassName` to a Pydantic model class."""
-    module_path, _, class_name = dotted.partition(":")
-    if not module_path or not class_name:
-        raise ValueError(
-            f"malformed schema reference {dotted!r} — expected 'module.path:ClassName'"
-        )
-    module = importlib.import_module(module_path)
-    schema = getattr(module, class_name)
+    schema = _import_object(dotted, "schema")
     if not (isinstance(schema, type) and issubclass(schema, BaseModel)):
         raise ValueError(f"{dotted!r} is not a Pydantic BaseModel subclass")
     return schema

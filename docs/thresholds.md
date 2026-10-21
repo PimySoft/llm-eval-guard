@@ -21,6 +21,10 @@ rule-based/schema metrics).
   so anything above 0.5 starts failing correct ones.
 - **Why these look low:** a threshold is the judge score that best matches a human pass/fail
   call, not a quality percentage. Both were set on `dev` before the held-out `test` run.
+- **`demo` / `context_recall` — 1.0.** Every fact a question needs must be in the retrieved
+  chunks; a missing one means the answer can't be grounded, whatever the generator does.
+- **`demo_quality` / `faithfulness`, `answer_relevancy` — 0.6 / 0.5.** Same calibrated cutoffs as
+  `quality`.
 - **`schema` / schema validators — 1.0 (implicit).** A malformed/missing field either breaks the
   consumer or it doesn't — no partial credit.
 - **`security` / `compliance`, `task_completion`, `pii_leakage` — 1.0.** Zero tolerance — a single

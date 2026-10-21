@@ -87,6 +87,11 @@ def _render_results(suite_results: list[SuiteRunResult]) -> bool:
             )
 
     console.print(table)
+    for suite_result in suite_results:
+        if suite_result.skipped_reason:
+            console.print(
+                f"[yellow]skipped {suite_result.suite_name}: {suite_result.skipped_reason}[/]"
+            )
     if total == 0:
         console.print("[yellow]no cases evaluated[/yellow]")
         return True

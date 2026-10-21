@@ -42,6 +42,9 @@ All notable changes to this project are documented in this file. Format follows
 - **Phase 9 (in progress):** demo RAG app in `examples/demo_rag/` — markdown knowledge base,
   hand-rolled BM25 retriever, generation through `prompts/rag_answer.j2` on local Ollama;
   `GenerationCache` in `core/cache.py` caches its answers keyed on model + rendered prompt.
+  Suites accept a `generator: module.path:function` that produces each case's output from the
+  system under test at run time (skipped under `--fast`); new rule-based `context_recall` metric;
+  `demo`/`demo_quality` suites and a `demo-rag` CI job gated on `leg run --suite demo`.
 
 ### Fixed
 

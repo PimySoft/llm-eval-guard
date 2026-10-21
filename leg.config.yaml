@@ -16,6 +16,26 @@ suites:
       - name: "schema:llm_eval_guard.schema.models:ToolCallOutput"
         fast: true
 
+  # Phase 9 demo app (examples/demo_rag): `generator` makes the app answer each question at run
+  # time. `demo` is deterministic (retrieval only), so CI gates on its exit code directly;
+  # `demo_quality` scores the generated answers with the judge (calibrated: local only).
+  demo:
+    dataset: examples/demo_rag/cases.jsonl
+    generator: "examples.demo_rag.app:generate"
+    metrics:
+      - name: context_recall
+        threshold: 1.0
+        fast: true
+
+  demo_quality:
+    dataset: examples/demo_rag/cases.jsonl
+    generator: "examples.demo_rag.app:generate"
+    metrics:
+      - name: faithfulness
+        threshold: 0.6
+      - name: answer_relevancy
+        threshold: 0.5
+
   # Red-team suite (Phase 4) — datasets/redteam/*.jsonl ship "safe" (properly-defended) reference
   # transcripts, so this suite is kept all-passing like `schema` above; detector discrimination
   # against vulnerable outputs is proven in tests/unit/test_injection.py and test_pii.py instead

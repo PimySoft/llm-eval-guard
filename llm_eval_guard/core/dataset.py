@@ -14,23 +14,28 @@ from pathlib import Path
 from llm_eval_guard.core.models import EvalCase
 
 
-def load_dataset_cases(paths: str | Path | Sequence[str | Path]) -> list[EvalCase]:
+def load_dataset_cases(
+    paths: str | Path | Sequence[str | Path], *, require_output: bool = True
+) -> list[EvalCase]:
     """Load one or more JSONL dataset files and concatenate their cases in order.
 
     Why a suite can point at several files (see `SuiteConfig.dataset` in core/config.py): the
     `security` suite grades across `datasets/redteam/{prompt_injection,indirect_injection,
     jailbreak,pii_leakage}.jsonl` in one run — one file per attack category keeps each dataset
     diffable/reviewable on its own, without forcing the suite config to pick just one.
+
+    `require_output=False` lets cases omit `actual_output` — for suites whose `generator`
+    produces it at run time.
     """
     if isinstance(paths, str | Path):
         paths = [paths]
     cases: list[EvalCase] = []
     for path in paths:
-        cases.extend(load_golden_dataset(path))
+        cases.extend(load_golden_dataset(path, require_output=require_output))
     return cases
 
 
-def load_golden_dataset(path: str | Path) -> list[EvalCase]:
+def load_golden_dataset(path: str | Path, *, require_output: bool = True) -> list[EvalCase]:
     """Read a golden-dataset JSONL file into a list of :class:`EvalCase`.
 
     Each line is a JSON object with ``input``/``actual_output`` (required) and optional
@@ -49,5 +54,7 @@ def load_golden_dataset(path: str | Path) -> list[EvalCase]:
                 record = json.loads(line)
             except json.JSONDecodeError as exc:
                 raise ValueError(f"{path}:{line_no}: invalid JSON — {exc}") from exc
+            if not require_output:
+                record.setdefault("actual_output", "")
             cases.append(EvalCase(**record))
     return cases

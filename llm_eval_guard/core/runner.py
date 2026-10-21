@@ -9,7 +9,7 @@ from llm_eval_guard.core.cache import ResultCache
 from llm_eval_guard.core.config import LegConfig
 from llm_eval_guard.core.dataset import load_dataset_cases
 from llm_eval_guard.core.models import MetricResult
-from llm_eval_guard.core.registry import build_metric
+from llm_eval_guard.core.registry import build_metric, load_generator
 from llm_eval_guard.metrics.deepeval_adapter import resolve_judge_model_name
 
 
@@ -28,6 +28,7 @@ class CaseResult:
 class SuiteRunResult:
     suite_name: str
     case_results: list[CaseResult]
+    skipped_reason: str | None = None
 
     @property
     def results(self) -> list[MetricResult]:
@@ -37,7 +38,8 @@ class SuiteRunResult:
 def run_suite(
     name: str, config: LegConfig, *, fast: bool = False, cache: ResultCache | None = None
 ) -> SuiteRunResult:
-    """Run every metric in suite `name` against its dataset.
+    """Run every metric in suite `name` against its dataset (after its `generator`, if any,
+    has produced each case's output from the system under test).
 
     `fast=True` skips any `MetricConfig` not marked `fast: true` — this is what lets
     `leg run --fast` stay network-free (see plan.md Phase 3.3).
@@ -50,7 +52,15 @@ def run_suite(
     except KeyError:
         raise KeyError(f"unknown suite {name!r} — known: {sorted(config.suites)}") from None
 
-    cases = load_dataset_cases(suite.dataset)
+    if suite.generator is not None:
+        if fast:
+            # Why skip rather than run the fast metrics: generating needs the system under test
+            # (an LLM call), and `--fast` promises zero network calls.
+            return SuiteRunResult(name, [], skipped_reason="generator suite — needs the app")
+        generate = load_generator(suite.generator)
+        cases = [generate(c) for c in load_dataset_cases(suite.dataset, require_output=False)]
+    else:
+        cases = load_dataset_cases(suite.dataset)
     case_results: list[CaseResult] = []
     for metric_cfg in suite.metrics:
         if fast and not metric_cfg.fast:

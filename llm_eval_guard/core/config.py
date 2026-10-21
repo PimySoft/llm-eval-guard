@@ -31,6 +31,9 @@ class SuiteConfig(BaseModel):
     # one JSONL file per attack category (see core/dataset.py's load_dataset_cases).
     dataset: str | list[str]
     metrics: list[MetricConfig]
+    # `module.path:function` taking and returning an `EvalCase`: the system under test, called
+    # per case to fill `actual_output`/`retrieval_context` at run time (e.g. examples/demo_rag).
+    generator: str | None = None
 
 
 class JudgeConfig(BaseModel):
