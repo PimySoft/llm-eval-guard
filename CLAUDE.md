@@ -10,15 +10,17 @@ threshold. Problem statement, target user, and non-goals are in [VISION.md](VISI
 phased build roadmap with per-phase Definition of Done is in [plan.md](plan.md) — check plan.md
 before assuming a module described below actually exists yet.
 
-**Current state:** Phases 1–5 done (workspace scaffolding, core metric framework, schema
-validation, prompt-drift testing, `leg run`/`leg init` CLI, the red-team security suite, CI/CD
-wiring, and Markdown/JSON reporting into `$GITHUB_STEP_SUMMARY`). Phase 6 docs (README,
-`docs/architecture.md`, `SECURITY.md`, `CHANGELOG.md`, PyPI package metadata, tag-triggered
-release workflow) are done. Phase 7 (golden dataset expansion to 56 labeled cases with `failure_mode`
-tags and a `dev`/`test` split) is done except the human self-agreement re-label pass. Phases 8–10
-(calibrated judge, demo RAG app + caught regression, security hardening) are not started yet; the `v0.1.0`
-tag/PyPI-publish moved to Phase 11. When building a phase, follow that phase's plan.md checklist rather than
-improvising a different shape.
+**Current state:** Phases 1–7 done (7 pending the human re-label pass); next is Phase 8.
+plan.md checkboxes are the source of truth. When building a phase, follow its plan.md checklist
+rather than improvising a different shape.
+
+## Workflow
+
+- One logical change per commit, per plan.md sub-section. In the same commit, tick the plan.md
+  checkbox, update that phase's Definition of Done note, and add a `CHANGELOG.md` entry under
+  the unreleased version.
+- Human-only steps — never do these unprompted: `git push`, `git tag`/`git push --tags`, making
+  the repo public, PyPI trusted-publisher setup, and the Phase 7 self-agreement re-label.
 
 ## Commands
 
@@ -30,6 +32,9 @@ make lint       # ruff check .
 make format     # ruff format .
 make typecheck  # mypy
 make test       # pytest
+make cov        # pytest with coverage report (target ≥80%, Phase 10)
+
+poetry run python scripts/calibrate_judge.py --model <ollama-model>   # judge vs human labels
 ```
 
 Single test: `poetry run pytest tests/unit/test_package.py::test_package_is_importable` or
@@ -51,6 +56,11 @@ calibration bar — see `docs/judge-calibration.md` before trusting its scores.
   prose, no Markdown tables, no paragraph over ~4 lines, one "Why:" line for a non-obvious design
   choice rather than a discussion, don't restate what the code already shows. `docs/` stays flat,
   one file per concern, split a file past ~150 lines.
+- `xfail` must be `strict=True` with a `reason`; never add a non-strict one. The existing
+  non-strict ones in `tests/integration/` are slated for Phases 8/10.
+- `examples/` (Phase 9 demo app): ruff already covers it; add it to mypy `files` in
+  `pyproject.toml` when created. No new heavy dependency (hand-rolled keyword/BM25 retriever);
+  cache generated outputs via `core/cache.py`. The regression-demo branch/PR is never merged.
 
 ## Architecture (Phase 2+ design — see plan.md for exact phase gating)
 
@@ -102,6 +112,11 @@ threshold)`, `calibration` (`pyproject.toml` `[tool.pytest.ini_options]`).
   truth (Phase 2.6 — the judge is only trusted once it's checked against these).
   `sample_rag_qa.jsonl` cases also carry `id`, `split` (`dev`/`test`), `category` and
   `failure_mode` — rules in `docs/datasets.md`, enforced by `tests/unit/test_dataset.py`.
+- Split discipline: select/tune judge models on `split: dev` only; report `test` numbers once, for
+  the final model. Never edit a `test` case's labels after seeing judge scores.
+- Changing the judge (`judge.model` in `leg.config.yaml` or the default in
+  `metrics/deepeval_adapter.py`) requires re-running `scripts/calibrate_judge.py` and updating
+  `docs/judge-calibration.md` in the same commit.
 - `datasets/redteam/*.jsonl` — adversarial payloads (prompt injection, jailbreak, PII-elicitation).
   Every entry must carry `attack_category`, `severity`, `expected_behavior`, and must never contain
   real PII — synthetic data only (see CONTRIBUTING.md).

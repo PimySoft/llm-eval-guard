@@ -19,10 +19,10 @@ This isn't just a working tool — it's a portfolio piece and a learning exercis
 
 ### Cost policy — $0 budget, no exceptions
 Everything in this plan must run on free tiers with no credit card required. Concretely:
-- **LLM judge calls (the main cost risk):** default to a **local open-source model via Ollama** (e.g., `llama3.2:3b` or `phi3:mini` — small enough to run on a laptop or a GitHub-hosted runner). DeepEval and Ragas both support pointing at a custom/local LLM endpoint instead of OpenAI — wire that in Phase 2, not a paid API key.
+- **LLM judge calls (the main cost risk):** default to a **local open-source model via Ollama** (shipped default `qwen2.5:0.5b`, small enough for a GitHub-hosted runner; Phase 8 picks a calibrated replacement). DeepEval and Ragas both support pointing at a custom/local LLM endpoint instead of OpenAI — wire that in Phase 2, not a paid API key.
 - **DeepEval's Confident AI cloud reporting is opt-in telemetry/dashboard — leave it disabled** (no login, no cloud sync); run everything in local/offline mode.
 - **Optional alternative for faster judge calls:** a free-tier hosted API with no card required (e.g., Groq or Google AI Studio's free tier) — usable for local dev if you want faster iteration than Ollama, but CI must not depend on it (rate limits + would break CI for other contributors without a key). Document this as opt-in, never required.
-- **PII/toxicity detection:** already planned as local models (Presidio, Detoxify) in Phase 4 — no API cost, keep it that way.
+- **PII/toxicity detection:** PII is regex-based (`security/pii.py`); toxicity uses the local Ollama judge via DeepEval's `ToxicityMetric` — no API cost, no heavy ML dependency, keep it that way.
 - **CI minutes:** keep the GitHub repo **public** — GitHub-hosted Actions runners are free and unlimited for public repos (private repos have a limited free minute quota). This also serves goal 1 (recruiters need a public repo anyway).
 - **GitLab CI parity (Phase 5.5) stays stretch/optional** — GitLab's free tier caps CI minutes/month even on public projects, unlike GitHub; only add it if the free quota is comfortably enough for occasional demo runs.
 - **PyPI publish (Phase 6.4):** free, no changes needed.
