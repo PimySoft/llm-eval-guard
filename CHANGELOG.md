@@ -50,7 +50,8 @@ All notable changes to this project are documented in this file. Format follows
   suite (keyed on `attack_category`, not the suite name `security`).
   [docs/test-strategy.md](docs/test-strategy.md): risk → check map and deliberate non-coverage.
   README "A caught regression": top-1 retrieval regression caught by the `demo` gate (12/12 →
-  8/12) while the calibrated judge barely moved (20/24 → 19/24).
+  8/12) while the calibrated judge barely moved (20/24 → 19/24); the red regression PR (#2) and
+  its job-summary screenshot are linked from the README.
 
 ### Fixed
 
