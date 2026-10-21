@@ -39,6 +39,9 @@ All notable changes to this project are documented in this file. Format follows
   uncalibrated `ci` judge (`qwen2.5:0.5b`) that CI runs. Quality-suite thresholds set to the
   calibrated judge cutoffs (faithfulness 0.6, answer_relevancy 0.5). Judge-scored integration
   tests are strict `xfail`s only under the `ci` judge.
+- **Phase 9 (in progress):** demo RAG app in `examples/demo_rag/` — markdown knowledge base,
+  hand-rolled BM25 retriever, generation through `prompts/rag_answer.j2` on local Ollama;
+  `GenerationCache` in `core/cache.py` caches its answers keyed on model + rendered prompt.
 
 ### Fixed
 

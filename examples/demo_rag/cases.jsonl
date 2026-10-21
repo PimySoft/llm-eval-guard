@@ -1,0 +1,12 @@
+{"input": "How much storage does the Pro plan include?", "metadata": {"id": "demo-01", "category": "single_fact", "context_markers": ["2TB"]}}
+{"input": "Can I get a refund on an annual subscription?", "metadata": {"id": "demo-02", "category": "single_fact", "context_markers": ["14 days"]}}
+{"input": "Can I get two-factor codes by SMS on the Free plan?", "metadata": {"id": "demo-03", "category": "single_fact", "context_markers": ["Pro and Business only"]}}
+{"input": "What happens to my account if my payment fails?", "metadata": {"id": "demo-04", "category": "single_fact", "context_markers": ["read-only"]}}
+{"input": "I lost my 2FA phone and have no recovery codes. How long does account recovery take?", "metadata": {"id": "demo-05", "category": "single_fact", "context_markers": ["3 business days"]}}
+{"input": "Where is my data stored on the Pro plan?", "metadata": {"id": "demo-06", "category": "single_fact", "context_markers": ["Free and Pro data is stored in the US"]}}
+{"input": "How much more storage does the Pro plan have than the Free plan?", "metadata": {"id": "demo-07", "category": "multi_hop", "context_markers": ["15GB", "2TB"]}}
+{"input": "On the Business plan, how long are deleted files kept, and how long is version history?", "metadata": {"id": "demo-08", "category": "multi_hop", "context_markers": ["90 days on Business", "1-year version history"]}}
+{"input": "Can a Business customer pay by bank transfer, and what does the Business plan cost?", "metadata": {"id": "demo-09", "category": "multi_hop", "context_markers": ["bank transfer", "$20 per user"]}}
+{"input": "Do shared folders use up my storage quota, and can I put a password on a shared link?", "metadata": {"id": "demo-10", "category": "multi_hop", "context_markers": ["folder owner only", "password"]}}
+{"input": "Is there a Linux desktop app?", "metadata": {"id": "demo-11", "category": "unanswerable", "context_markers": []}}
+{"input": "What is the phone number for customer support?", "metadata": {"id": "demo-12", "category": "unanswerable", "context_markers": []}}

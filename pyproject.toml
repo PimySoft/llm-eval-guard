@@ -86,7 +86,7 @@ indent-style = "space"
 
 [tool.mypy]
 python_version = "3.10"
-files = ["llm_eval_guard", "tests"]
+files = ["llm_eval_guard", "examples", "tests"]
 strict = true
 warn_unused_configs = true
 
