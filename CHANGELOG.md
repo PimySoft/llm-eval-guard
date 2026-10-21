@@ -54,6 +54,10 @@ All notable changes to this project are documented in this file. Format follows
 
 ### Fixed
 
+- A judge-metric call that raises (e.g. the 0.5B `ci` judge looping until DeepEval's timeout) now
+  fails that one case with a `judge error` reason instead of crashing the whole `leg run`; errored
+  results aren't cached. Rule-based metric errors still raise.
+
 - Demo app caps answers at 512 tokens — greedy decoding on `qwen2.5:0.5b` looped until the 300 s
   timeout in CI.
 - CLI `--help` tests failed on GitHub Actions, where Typer forces Rich colour codes into the help

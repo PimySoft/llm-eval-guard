@@ -8,7 +8,8 @@ from typing import Any
 from llm_eval_guard.core.cache import ResultCache
 from llm_eval_guard.core.config import LegConfig
 from llm_eval_guard.core.dataset import load_dataset_cases
-from llm_eval_guard.core.models import MetricResult
+from llm_eval_guard.core.metric import Metric
+from llm_eval_guard.core.models import EvalCase, MetricResult
 from llm_eval_guard.core.registry import build_metric, load_generator
 from llm_eval_guard.metrics.deepeval_adapter import resolve_judge_model_name
 
@@ -39,6 +40,26 @@ class SuiteRunResult:
     @property
     def results(self) -> list[MetricResult]:
         return [cr.result for cr in self.case_results]
+
+
+_JUDGE_ERROR = "judge error"
+
+
+def _evaluate(metric: Metric, case: EvalCase, *, judge: bool) -> MetricResult:
+    """A judge call that errors (e.g. a small judge looping until DeepEval's timeout) fails that
+    one case instead of crashing the run. Rule-based metrics still raise — there an exception
+    is a bug, not model flakiness. Errored results are never cached, so the next run retries."""
+    if not judge:
+        return metric.evaluate(case)
+    try:
+        return metric.evaluate(case)
+    except Exception as exc:
+        return MetricResult(
+            metric_name=metric.name,
+            score=0.0,
+            passed=False,
+            reason=f"{_JUDGE_ERROR}: {type(exc).__name__}: {exc}"[:300],
+        )
 
 
 def run_suite(
@@ -79,8 +100,9 @@ def run_suite(
             if cache is not None and not metric_cfg.fast:
                 result = cache.get(metric.name, case, scope)
             if result is None:
-                result = metric.evaluate(case)
-                if cache is not None and not metric_cfg.fast:
+                result = _evaluate(metric, case, judge=not metric_cfg.fast)
+                errored = result.reason is not None and result.reason.startswith(_JUDGE_ERROR)
+                if cache is not None and not metric_cfg.fast and not errored:
                     cache.set(metric.name, case, result, scope)
             case_results.append(
                 CaseResult(case_input=case.input, result=result, metadata=case.metadata)

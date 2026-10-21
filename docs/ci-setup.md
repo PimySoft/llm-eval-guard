@@ -30,6 +30,8 @@ jobs.
 - **The calibrated judge (`qwen2.5:7b`) doesn't run in CI.** ~15–20 s/case on an M3 GPU means
   well over an hour for the quality suite on a free CPU runner. Gate on it locally or on a
   self-hosted runner: `leg run --suite quality` with the default `judge` block.
+- **A judge call that errors fails only its case** (`judge error: …` in the report), never the
+  whole run — the 0.5B judge occasionally loops until DeepEval's timeout. Errors aren't cached.
 - See [judge-calibration.md](judge-calibration.md) for both judges' numbers.
 
 ## Why `eval-suite`/`security-suite` gate on pytest, not a raw `leg run` exit code
