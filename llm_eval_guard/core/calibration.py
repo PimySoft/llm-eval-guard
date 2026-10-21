@@ -8,6 +8,8 @@ actually defend (see docs/judge-calibration.md).
 
 from __future__ import annotations
 
+import random
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -19,6 +21,10 @@ from llm_eval_guard.core.models import EvalCase
 # agreement — independent of whatever threshold a metric is actually deployed with in CI.
 PASS_THRESHOLD = 0.5
 
+# Fixed seed so two runs over the same judge scores report the same interval.
+BOOTSTRAP_SEED = 0
+BOOTSTRAP_RESAMPLES = 2000
+
 
 @dataclass
 class CaseComparison:
@@ -27,6 +33,8 @@ class CaseComparison:
     human_score: float
     judge_score: float
     reason: str | None
+    failure_mode: str | None = None
+    seconds: float = 0.0
 
     @property
     def human_pass(self) -> bool:
@@ -69,6 +77,44 @@ class MetricCalibration:
     def mismatches(self) -> list[CaseComparison]:
         return [c for c in self.cases if not c.agrees]
 
+    @property
+    def mean_seconds(self) -> float:
+        if not self.cases:
+            return 0.0
+        return sum(c.seconds for c in self.cases) / len(self.cases)
+
+    def per_failure_mode(self) -> dict[str, tuple[float, int]]:
+        """Agreement and case count per ``failure_mode`` tag (untagged cases group as "none")."""
+        groups: dict[str, list[CaseComparison]] = {}
+        for case in self.cases:
+            groups.setdefault(case.failure_mode or "none", []).append(case)
+        return {
+            mode: (sum(1 for c in group if c.agrees) / len(group), len(group))
+            for mode, group in sorted(groups.items())
+        }
+
+    def agreement_ci(
+        self,
+        confidence: float = 0.95,
+        resamples: int = BOOTSTRAP_RESAMPLES,
+        seed: int = BOOTSTRAP_SEED,
+    ) -> tuple[float, float] | None:
+        """Percentile-bootstrap confidence interval on pass/fail agreement.
+
+        Why: at n≈40, one flipped case moves agreement by ~2.5 points — the interval shows when a
+        gap between two judges is just resampling noise.
+        """
+        n = len(self.cases)
+        if n == 0:
+            return None
+        hits = [1 if c.agrees else 0 for c in self.cases]
+        rng = random.Random(seed)
+        stats = sorted(sum(rng.choices(hits, k=n)) / n for _ in range(resamples))
+        tail = (1 - confidence) / 2
+        low = stats[int(tail * (resamples - 1))]
+        high = stats[int((1 - tail) * (resamples - 1))]
+        return low, high
+
 
 def _pearson(xs: list[float], ys: list[float]) -> float | None:
     """Hand-rolled Pearson correlation — no need to pull in scipy/numpy for one formula."""
@@ -102,7 +148,9 @@ def calibrate(
             continue
         if requires_context and not case.retrieval_context:
             continue
+        start = time.perf_counter()
         result = metric.evaluate(case)
+        elapsed = time.perf_counter() - start
         calibration.cases.append(
             CaseComparison(
                 input=case.input,
@@ -110,6 +158,8 @@ def calibrate(
                 human_score=float(case.metadata[human_label_key]),
                 judge_score=result.score,
                 reason=result.reason,
+                failure_mode=case.metadata.get("failure_mode"),
+                seconds=elapsed,
             )
         )
     return calibration
@@ -121,6 +171,10 @@ def load_and_calibrate(
     human_label_key: str,
     *,
     requires_context: bool = False,
+    split: str | None = None,
 ) -> MetricCalibration:
+    """``split`` keeps only cases whose ``metadata["split"]`` matches (``None`` = all cases)."""
     cases = load_golden_dataset(dataset_path)
+    if split is not None:
+        cases = [c for c in cases if c.metadata.get("split") == split]
     return calibrate(cases, metric, human_label_key, requires_context=requires_context)

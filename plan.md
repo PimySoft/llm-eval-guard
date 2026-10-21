@@ -320,7 +320,7 @@ Goal: a labeled set big and balanced enough that a calibration number means some
 
 Goal: turn "the default judge fails calibration" into "this judge passes calibration, and here's the number" — so the quality gate actually gates.
 
-- [ ] Extend `scripts/calibrate_judge.py`: `--split dev|test`, per-`failure_mode` agreement, wall-clock seconds per case, and a bootstrap 95% confidence interval on agreement — Why: the interval shows when a difference between two models is just noise
+- [x] Extend `scripts/calibrate_judge.py`: `--split dev|test`, per-`failure_mode` agreement, wall-clock seconds per case, and a bootstrap 95% confidence interval on agreement — Why: the interval shows when a difference between two models is just noise
 - [ ] Run candidate local models on `dev` (e.g., `llama3.2:3b`, `qwen2.5:3b`, `phi3:mini`, `qwen2.5:7b` if hardware allows); record agreement/MAE/r/runtime per model in `docs/judge-calibration.md`
 - [ ] Pick the best model that clears the ≥80% bar on `dev`, then report its `test`-split numbers once, as the headline result
 - [ ] If it's too slow for a free CI runner, separate the two roles explicitly: a `ci` judge (fast, documented as a smoke check) and a `recommended` judge (calibrated, for local/self-hosted gating) via `leg.config.yaml`, and say which is which in the docs
@@ -328,7 +328,7 @@ Goal: turn "the default judge fails calibration" into "this judge passes calibra
 - [ ] Follow the swap-over path in `docs/ci-setup.md`: switch `eval-suite` from `pytest -m live_llm` to gating on the `leg run` exit code, if the calibrated judge runs in CI
 - [ ] If no local model clears the bar, document that as the finding (with the per-model numbers) and gate on the best one with a lowered, explicitly justified bar — don't quietly pretend
 
-**Definition of Done:** `docs/judge-calibration.md` shows a model comparison and a held-out `test`-split agreement ≥80% with a confidence interval (or a documented, numbers-backed explanation of why none got there); no non-strict `xfail` remains; CI gates on the judge that the docs say it does.
+**Definition of Done:** `docs/judge-calibration.md` shows a model comparison and a held-out `test`-split agreement ≥80% with a confidence interval (or a documented, numbers-backed explanation of why none got there); no non-strict `xfail` remains; CI gates on the judge that the docs say it does. **In progress** — calibration tooling done (`--split`, per-`failure_mode` agreement, s/case, bootstrap 95% CI in `core/calibration.py`); model comparison not yet run.
 
 ---
 

@@ -29,6 +29,9 @@ All notable changes to this project are documented in this file. Format follows
 - **Phase 6:** `leg init` scaffolding command; README skills-demonstrated table and quickstart;
   [docs/architecture.md](docs/architecture.md) with data-flow and indirect-injection sequence
   diagrams; `SECURITY.md`; PyPI package metadata and a tag-triggered release workflow.
+- **Phase 8 (in progress):** `scripts/calibrate_judge.py --split dev|test` reports per-
+  `failure_mode` agreement, wall-clock seconds per case, and a bootstrap 95% confidence interval
+  on agreement.
 
 ### Known limitations
 
