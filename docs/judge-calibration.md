@@ -81,6 +81,26 @@ Run once with the choice above; not re-tuned afterwards.
   0.5, i.e. false rejections, plus 1 hallucinated detail let through at 0.67.
 - n=17 is small — the interval spans 47–88%, so this neither confirms nor rules out an 80% judge.
 
+## Gate decision: faithfulness at a lowered 70% bar
+
+No local model cleared 80% held-out on faithfulness, so per plan.md the best one is gated at a
+lowered, explicit bar instead of being quietly trusted:
+
+- Faithfulness gates at **70%** (`MIN_PASS_RATE` in `tests/integration/test_faithfulness.py`);
+  relevancy keeps 80%.
+- Why 70% is defensible: `dev` 82%, `test` 71%, and the `test` interval (47–88%) includes 80%.
+- Why it still catches regressions: gates use a suite pass *rate*, so per-case judge errors
+  average out; a grounding regression shifts the whole rate, not one case.
+- The human self-agreement number (Phase 7 re-label) is still pending; it caps any judge.
+- Re-calibrate on a fresh, larger held-out set before raising this bar — not on this `test` split.
+
+## Judge roles
+
+- **`recommended` — `qwen2.5:7b`** (default `judge` in `leg.config.yaml`): the numbers above;
+  use for local/self-hosted gating.
+- **`ci` — `qwen2.5:0.5b`** (`judge_profiles.ci`, `leg run --judge ci`): fast, **uncalibrated**
+  smoke check for free CPU runners; judge-scored tests are strict `xfail`s under it.
+
 ## `qwen2.5:0.5b` failure modes (observed)
 
 - **Boilerplate reasoning** — near-identical, self-contradictory reason text on unrelated cases

@@ -10,6 +10,7 @@ from llm_eval_guard.core.config import LegConfig
 from llm_eval_guard.core.dataset import load_dataset_cases
 from llm_eval_guard.core.models import MetricResult
 from llm_eval_guard.core.registry import build_metric
+from llm_eval_guard.metrics.deepeval_adapter import resolve_judge_model_name
 
 
 @dataclass
@@ -55,14 +56,16 @@ def run_suite(
         if fast and not metric_cfg.fast:
             continue
         metric = build_metric(metric_cfg, config.judge)
+        # A cached score is only valid for the judge and threshold that produced it.
+        scope = f"{resolve_judge_model_name(config.judge.model)}@{metric.threshold}"
         for case in cases:
             result: MetricResult | None = None
             if cache is not None and not metric_cfg.fast:
-                result = cache.get(metric.name, case)
+                result = cache.get(metric.name, case, scope)
             if result is None:
                 result = metric.evaluate(case)
                 if cache is not None and not metric_cfg.fast:
-                    cache.set(metric.name, case, result)
+                    cache.set(metric.name, case, result, scope)
             case_results.append(
                 CaseResult(case_input=case.input, result=result, metadata=case.metadata)
             )

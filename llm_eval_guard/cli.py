@@ -121,6 +121,13 @@ def run(
         help="Reuse judge-metric results from .leg_cache/ for unchanged (metric, case) pairs — "
         "saves CI time, not money, since the judge model is already $0 (see docs/ci-setup.md).",
     ),
+    judge: str | None = typer.Option(
+        None,
+        "--judge",
+        envvar="LEG_JUDGE_PROFILE",
+        help="Judge profile from leg.config.yaml's judge_profiles (e.g. 'ci'); omitted uses the "
+        "default `judge` block (see docs/judge-calibration.md for which is calibrated).",
+    ),
     report_dir: str | None = typer.Option(
         None,
         "--report-dir",
@@ -130,6 +137,11 @@ def run(
 ) -> None:
     """Run an eval suite and exit non-zero if any case fails."""
     leg_config = load_config(Path(config))
+    try:
+        leg_config = leg_config.model_copy(update={"judge": leg_config.resolve_judge(judge)})
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=2) from exc
     result_cache = ResultCache(DEFAULT_CACHE_PATH) if cache else None
 
     if suite == "all":
@@ -172,7 +184,7 @@ def init(
     for path in written:
         console.print(f"  {path}")
     console.print(
-        "\nNext: `ollama pull qwen2.5:0.5b`, then `leg run --config "
+        "\nNext: `ollama pull qwen2.5:7b` (calibrated judge), then `leg run --config "
         f"{Path(directory) / 'leg.config.yaml'}`."
     )
 

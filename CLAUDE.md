@@ -41,9 +41,10 @@ Single test: `poetry run pytest tests/unit/test_package.py::test_package_is_impo
 `poetry run pytest -k <expr>`.
 
 Live-judge (`live_llm`-marked) tests need [Ollama](https://ollama.com) running locally with
-`ollama pull qwen2.5:0.5b` pulled (auto-skip otherwise, see `llm_eval_guard/pytest_plugin.py`);
-plain unit tests don't require it (see Cost policy). The default judge model fails its own
-calibration bar — see `docs/judge-calibration.md` before trusting its scores.
+`ollama pull qwen2.5:7b` pulled (auto-skip otherwise, see `llm_eval_guard/pytest_plugin.py`);
+plain unit tests don't require it (see Cost policy). Two judge roles: `qwen2.5:7b` is the
+calibrated default; `qwen2.5:0.5b` is the uncalibrated `ci` profile, under which judge-scored
+integration tests are strict xfails (`tests/integration/_judge.py`). See `docs/judge-calibration.md`.
 
 ## Coding standards
 
@@ -56,8 +57,8 @@ calibration bar — see `docs/judge-calibration.md` before trusting its scores.
   prose, no Markdown tables, no paragraph over ~4 lines, one "Why:" line for a non-obvious design
   choice rather than a discussion, don't restate what the code already shows. `docs/` stays flat,
   one file per concern, split a file past ~150 lines.
-- `xfail` must be `strict=True` with a `reason`; never add a non-strict one. The existing
-  non-strict ones in `tests/integration/` are slated for Phases 8/10.
+- `xfail` must be `strict=True` with a `reason`; never add a non-strict one. Judge-dependent
+  ones use `xfail_under_ci_judge` (`tests/integration/_judge.py`).
 - `examples/` (Phase 9 demo app): ruff already covers it; add it to mypy `files` in
   `pyproject.toml` when created. No new heavy dependency (hand-rolled keyword/BM25 retriever);
   cache generated outputs via `core/cache.py`. The regression-demo branch/PR is never merged.

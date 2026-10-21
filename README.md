@@ -52,7 +52,7 @@ on top of one (DeepEval today). What it adds on top of the raw eval engine:
 
 ```bash
 pip install llm-eval-guard[deepeval]
-ollama pull qwen2.5:0.5b        # local, $0-cost judge — see Development setup below
+ollama pull qwen2.5:7b          # local, $0-cost calibrated judge (qwen2.5:0.5b = fast CI judge)
 
 leg init                        # scaffolds leg.config.yaml + a sample dataset + example test
 leg run                         # full suite, scored by the local Ollama judge
@@ -92,9 +92,12 @@ suites:
     dataset: datasets/golden/sample_rag_qa.jsonl
     metrics:
       - name: faithfulness
-        threshold: 0.8
+        threshold: 0.6        # calibrated judge cutoff — see docs/thresholds.md
 judge:
-  model: qwen2.5:0.5b
+  model: qwen2.5:7b           # calibrated "recommended" judge
+judge_profiles:
+  ci:
+    model: qwen2.5:0.5b       # fast smoke check: `leg run --judge ci`
 ```
 
 Full key reference: [docs/architecture.md](docs/architecture.md#legconfigyaml-reference) ·
@@ -149,8 +152,9 @@ make install && poetry run pre-commit install && make test
 ```
 
 Prerequisites (Poetry, optional Ollama) and the full workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
-Read [docs/judge-calibration.md](docs/judge-calibration.md) before trusting the default judge's
-scores — it's measured, and the measurement isn't flattering.
+Read [docs/judge-calibration.md](docs/judge-calibration.md) before trusting judge scores. The
+default `qwen2.5:7b` judge agreed with human labels 82% (relevancy) and 71% (faithfulness) on a
+held-out split; the CI judge is an uncalibrated smoke check.
 
 ## Docs
 

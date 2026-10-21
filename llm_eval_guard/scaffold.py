@@ -18,13 +18,18 @@ suites:
     dataset: datasets/golden/sample.jsonl
     metrics:
       - name: faithfulness
-        threshold: 0.8
+        threshold: 0.6
       - name: answer_relevancy
-        threshold: 0.8
+        threshold: 0.5
 
+# qwen2.5:7b is the calibrated judge; `leg run --judge ci` uses the fast, uncalibrated one.
 judge:
-  model: qwen2.5:0.5b
+  model: qwen2.5:7b
   base_url: http://localhost:11434
+
+judge_profiles:
+  ci:
+    model: qwen2.5:0.5b
 """
 
 SAMPLE_DATASET = (
@@ -40,7 +45,7 @@ EXAMPLE_TEST = '''\
 from your real LLM/RAG pipeline's output (wire it in via the `eval_client` fixture in your own
 conftest.py — see llm_eval_guard.pytest_plugin) once you're ready to test it for real.
 
-Requires Ollama running locally (`ollama pull qwen2.5:0.5b`) — this test carries
+Requires Ollama running locally (`ollama pull qwen2.5:7b`) — this test carries
 `@pytest.mark.live_llm` so it auto-skips instead of failing if Ollama isn't reachable.
 """
 
@@ -54,7 +59,7 @@ from llm_eval_guard.pytest_plugin import assert_eval_metric
 
 
 @pytest.mark.live_llm
-@pytest.mark.eval_metric(name="faithfulness", threshold=0.8)
+@pytest.mark.eval_metric(name="faithfulness", threshold=0.6)
 def test_sample_answer_is_faithful(judge_llm, request):
     case = EvalCase(
         input="What is the return window on Aperture orders?",
@@ -66,7 +71,7 @@ def test_sample_answer_is_faithful(judge_llm, request):
             "full refund. Items must be unused and in original packaging."
         ],
     )
-    result = faithfulness_metric(threshold=0.8, model=judge_llm).evaluate(case)
+    result = faithfulness_metric(threshold=0.6, model=judge_llm).evaluate(case)
     assert_eval_metric(result, request)
 '''
 

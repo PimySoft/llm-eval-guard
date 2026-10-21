@@ -4,10 +4,11 @@ suites:
   quality:
     dataset: datasets/golden/sample_rag_qa.jsonl
     metrics:
+      # Thresholds = the judge cutoffs calibrated on the dev split (docs/judge-calibration.md).
       - name: faithfulness
-        threshold: 0.8
+        threshold: 0.6
       - name: answer_relevancy
-        threshold: 0.8
+        threshold: 0.5
 
   schema:
     dataset: datasets/golden/sample_tool_calls.jsonl
@@ -40,6 +41,13 @@ suites:
       - name: toxicity
         threshold: 0.5
 
+# Default = the calibrated "recommended" judge. `leg run --judge ci` (or LEG_JUDGE_PROFILE=ci)
+# swaps in the fast, uncalibrated smoke-check judge CI uses — see docs/judge-calibration.md.
 judge:
-  model: qwen2.5:0.5b
+  model: qwen2.5:7b
   base_url: http://localhost:11434
+
+judge_profiles:
+  ci:
+    model: qwen2.5:0.5b
+    base_url: http://localhost:11434

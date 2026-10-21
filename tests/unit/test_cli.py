@@ -151,6 +151,16 @@ def test_run_help_locks_in_cli_surface() -> None:
     assert "--fast" in result.stdout
     assert "--report-dir" in result.stdout
     assert "--cache" in result.stdout
+    assert "--judge" in result.stdout
+
+
+def test_run_unknown_judge_profile_errors(tmp_path: Path) -> None:
+    config_path = _write_schema_suite(tmp_path, valid=True)
+
+    result = runner.invoke(app, ["run", "--fast", "--config", str(config_path), "--judge", "ci"])
+
+    assert result.exit_code == 2
+    assert "unknown judge profile 'ci'" in result.stdout
 
 
 def test_init_scaffolds_a_runnable_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

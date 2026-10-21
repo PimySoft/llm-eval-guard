@@ -49,8 +49,10 @@ flowchart TD
 - `suites.<name>.metrics[].fast` (`bool`) — whether `leg run --fast` includes this metric — `true`
   only for checks with no network call
 - `judge.model` (`str | null`) — Ollama model tag; falls back to `LEG_JUDGE_MODEL` env var, then a
-  built-in default
+  built-in default (`qwen2.5:7b`, the calibrated judge)
 - `judge.base_url` (`str | null`) — Ollama server URL; falls back to `OLLAMA_BASE_URL` env var
+- `judge_profiles.<name>` — named alternatives with the same keys as `judge`, picked with
+  `leg run --judge <name>` or `LEG_JUDGE_PROFILE`; the repo ships `ci` (fast, uncalibrated)
 
 Dataset paths resolve relative to the working directory `leg run` is invoked from, not the config
 file's own directory (`core/dataset.py`) — run `leg run` from the project root, same as `pytest`.

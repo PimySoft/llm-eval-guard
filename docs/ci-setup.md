@@ -20,28 +20,36 @@ jobs.
 - **`security-suite`** — no matrix, needs Ollama. Same pattern as `eval-suite`, scoped to the
   toxicity + full security-suite live tests.
 
+## Which judge CI runs
+
+- **CI uses the `ci` judge profile** (`qwen2.5:0.5b`, via `LEG_JUDGE_MODEL` + `LEG_JUDGE_PROFILE`):
+  a smoke check that the judge plumbing runs end-to-end. It is **not calibrated**.
+- **The calibrated judge (`qwen2.5:7b`) doesn't run in CI.** ~15–20 s/case on an M3 GPU means
+  well over an hour for the quality suite on a free CPU runner. Gate on it locally or on a
+  self-hosted runner: `leg run --suite quality` with the default `judge` block.
+- See [judge-calibration.md](judge-calibration.md) for both judges' numbers.
+
 ## Why `eval-suite`/`security-suite` gate on pytest, not a raw `leg run` exit code
 
-- **The problem:** the default judge (`qwen2.5:0.5b`) fails calibration
-  ([judge-calibration.md](judge-calibration.md)), so `leg run`'s exit code is near-random on
-  judge-scored metrics.
-- **The workaround:** the judge-scored integration tests are `xfail(strict=False)`. Running them
-  via `pytest` keeps the check green on known judge noise but still fails on real breakage.
+- **Under the `ci` judge, `leg run`'s exit code is near-random** on judge-scored metrics.
+- **The judge-scored integration tests are strict `xfail`s under the `ci` judge**
+  (`tests/integration/_judge.py`): green on known judge noise, red on real breakage — and red on
+  an unexpected pass, so a changed judge can't slip by unnoticed.
 - **`leg run` still runs** (`if: always()`, exit code discarded with `|| true`) — only to produce
   the report.
-- **Once a judge clears calibration:** set `LEG_JUDGE_MODEL` in the workflow, drop the `xfail`
-  markers, and gate directly on `leg run --suite quality` / `--suite security`.
+- **`quality`'s dataset is a calibration set**, half deliberately-bad answers, so `leg run --suite
+  quality` exits 1 by design under any judge. Gating on a real system's outputs is Phase 9.
 
 ## Ollama on the runner
 
 `.github/actions/setup-ollama` installs Ollama, starts it in the background, and pulls the judge
 model — cached via `actions/cache` on `~/.ollama` so the model only re-downloads when the tag
-changes. No API key, no secret, no cost: it's a free-tier CPU runner running a 0.5B model.
+changes. No API key, no secret, no cost: it's a free-tier CPU runner running the 0.5B `ci` judge.
 
 ## Judge-result cache
 
 `core/cache.py`'s `ResultCache` persists judge-scored `MetricResult`s to `.leg_cache/`, keyed on
-`(metric, input, output, context)`. `eval-suite`/`security-suite` restore/save that path via
+`(metric, judge model, threshold, input, output, context)`. `eval-suite`/`security-suite` restore/save that path via
 `actions/cache`, keyed on a hash of the relevant dataset files — an unchanged case isn't re-scored
 by the judge on the next CI run of the same dataset. This saves CI *time*, not money: the judge is
 already $0.

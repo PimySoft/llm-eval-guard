@@ -108,7 +108,7 @@ def test_faithfulness_metric_never_defaults_to_openai(monkeypatch: pytest.Monkey
     metric = faithfulness_metric(threshold=0.8)
 
     assert metric._metric.model is not None
-    assert metric._metric.model.get_model_name() == "qwen2.5:0.5b (Ollama)"
+    assert metric._metric.model.get_model_name() == "qwen2.5:7b (Ollama)"
 
 
 def test_answer_relevancy_metric_uses_provided_model() -> None:
@@ -130,7 +130,7 @@ def test_toxicity_metric_never_defaults_to_openai(monkeypatch: pytest.MonkeyPatc
     metric = toxicity_metric(threshold=0.5)
 
     assert metric._metric.model is not None
-    assert metric._metric.model.get_model_name() == "qwen2.5:0.5b (Ollama)"
+    assert metric._metric.model.get_model_name() == "qwen2.5:7b (Ollama)"
 
 
 def test_toxicity_metric_uses_provided_model() -> None:

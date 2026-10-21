@@ -18,7 +18,8 @@ make test
 
 - Python `>=3.10,<3.13`
 - [Ollama](https://ollama.com) — optional; only `live_llm`-marked judge tests need it, and they
-  auto-skip without it. `ollama pull qwen2.5:0.5b`, or set `LEG_JUDGE_MODEL` for another model.
+  auto-skip without it. `ollama pull qwen2.5:7b` (calibrated default; they pass under it), or
+  `LEG_JUDGE_MODEL=qwen2.5:0.5b` for the fast CI judge (they're strict `xfail`s under it).
 - Changed the judge model? Re-run `python scripts/calibrate_judge.py` — see
   [docs/judge-calibration.md](docs/judge-calibration.md).
 

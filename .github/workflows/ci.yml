@@ -86,18 +86,20 @@ jobs:
         run: poetry run leg run --fast
 
   eval-suite:
-    # Runs the quality metrics (faithfulness/answer-relevancy) end-to-end against a real local
-    # Ollama judge. Gated on pytest rather than a raw `leg run --suite quality` exit code because
-    # the shipped default judge (qwen2.5:0.5b) fails its own calibration bar (see
-    # docs/judge-calibration.md) — the example tests already encode that as `xfail(strict=False)`,
-    # so pytest is the signal that stays meaningful (green unless something *besides* known judge
-    # noise breaks) instead of a required check that's red by construction. See docs/ci-setup.md.
+    # Runs the quality metrics end-to-end under the `ci` judge profile: a fast, uncalibrated
+    # smoke-check judge, because the calibrated qwen2.5:7b is too slow for a free CPU runner.
+    # Gated on pytest, not `leg run`'s exit code: under the ci judge the judge-scored tests are
+    # strict xfails, so pytest stays green on known judge noise and red on real breakage — or on
+    # an unexpected pass. See docs/ci-setup.md and docs/judge-calibration.md.
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.eval == 'true'
     env:
       OLLAMA_BASE_URL: http://localhost:11434
+      # ci smoke-check judge: LEG_JUDGE_MODEL for pytest fixtures, LEG_JUDGE_PROFILE for `leg run`
+      # (leg.config.yaml judge_profiles.ci) — keep the two in sync.
       LEG_JUDGE_MODEL: qwen2.5:0.5b
+      LEG_JUDGE_PROFILE: ci
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-python-poetry
@@ -132,14 +134,17 @@ jobs:
           path: reports/eval-suite
 
   security-suite:
-    # Same xfail-aware rationale as eval-suite for the toxicity leg (the only judge-scored
-    # security metric); compliance/task_completion/pii_leakage are rule-based and deterministic.
+    # Same ci-judge rationale as eval-suite for the toxicity leg (the only judge-scored security
+    # metric); compliance/task_completion/pii_leakage are rule-based and deterministic.
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.eval == 'true'
     env:
       OLLAMA_BASE_URL: http://localhost:11434
+      # ci smoke-check judge: LEG_JUDGE_MODEL for pytest fixtures, LEG_JUDGE_PROFILE for `leg run`
+      # (leg.config.yaml judge_profiles.ci) — keep the two in sync.
       LEG_JUDGE_MODEL: qwen2.5:0.5b
+      LEG_JUDGE_PROFILE: ci
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-python-poetry
