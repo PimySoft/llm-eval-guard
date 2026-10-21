@@ -16,7 +16,8 @@ test:
 	poetry run pytest
 
 cov:
-	poetry run pytest --cov=llm_eval_guard --cov-report=term-missing
+	poetry run coverage run -m pytest
+	poetry run coverage report
 
 run:
 	poetry run leg run

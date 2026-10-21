@@ -31,3 +31,12 @@ def test_subpackage_imports_cold_without_a_cycle(module: str) -> None:
         [sys.executable, "-c", f"import {module}"], capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_core_re_exports_the_runner_lazily() -> None:
+    from llm_eval_guard import core
+    from llm_eval_guard.core import runner
+
+    assert core.run_suite is runner.run_suite
+    with pytest.raises(AttributeError, match="no_such_name"):
+        _ = core.no_such_name

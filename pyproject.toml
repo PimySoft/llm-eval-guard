@@ -66,10 +66,10 @@ dev = [
     "ruff (>=0.16.8,<0.17.0)",
     "pre-commit (>=4.6.2,<5.0.0)",
     "mypy (>=2.3.1,<3.0.0)",
-    "pytest-cov (>=7.1.0,<8.0.0)",
     "pytest-asyncio (>=1.4.0,<2.0.0)",
     "pytest-mock (>=3.15.1,<4.0.0)",
-    "types-pyyaml (>=6.0.12.20260906,<7.0.0.0)"
+    "types-pyyaml (>=6.0.12.20260906,<7.0.0.0)",
+    "coverage[toml] (>=7.10,<8.0)"
 ]
 
 [tool.ruff]
@@ -111,3 +111,13 @@ markers = [
     "calibration: judge calibration check against human-labeled ground truth",
     "live_llm: exercises a real local Ollama call (skipped automatically if unreachable)",
 ]
+
+# Why `coverage run -m pytest`, not pytest-cov: our pytest11 entry point imports llm_eval_guard
+# before pytest-cov starts measuring, so every module-level line read as uncovered (67% vs 96%).
+[tool.coverage.run]
+source = ["llm_eval_guard"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = true

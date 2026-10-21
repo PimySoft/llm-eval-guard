@@ -10,7 +10,7 @@ threshold. Problem statement, target user, and non-goals are in [VISION.md](VISI
 phased build roadmap with per-phase Definition of Done is in [plan.md](plan.md) — check plan.md
 before assuming a module described below actually exists yet.
 
-**Current state:** Phases 1–9 done (7 pending the human re-label pass); next is Phase 10.
+**Current state:** Phases 1–10 done (7 pending the human re-label pass); next is Phase 11.
 plan.md checkboxes are the source of truth. When building a phase, follow its plan.md checklist
 rather than improvising a different shape.
 
@@ -32,7 +32,7 @@ make lint       # ruff check .
 make format     # ruff format .
 make typecheck  # mypy
 make test       # pytest
-make cov        # pytest with coverage report (target ≥80%, Phase 10)
+make cov        # coverage run -m pytest + report; fails under 80% (same gate as CI)
 
 poetry run python scripts/calibrate_judge.py --model <ollama-model>   # judge vs human labels
 ```

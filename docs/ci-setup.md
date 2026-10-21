@@ -12,7 +12,10 @@ jobs.
   `ruff format --check`, `mypy`.
 - **`unit-tests`** — matrixed over Python 3.10/3.11/3.12, no Ollama needed. Runs `pytest` —
   `live_llm`-marked tests auto-skip without Ollama (`pytest_plugin.py`), so this job stays fast
-  and network-free without any marker filtering.
+  and network-free without any marker filtering. Runs under `coverage run` and fails below 80%
+  line coverage (`fail_under` in `pyproject.toml`; same gate as `make cov`).
+  - Why not pytest-cov: the `pytest11` entry point imports the package before pytest-cov starts,
+    so module-level lines read as uncovered.
 - **`schema-drift`** — no matrix, no Ollama needed. Runs `leg run --fast` — schema validation +
   prompt-drift snapshots, no network calls.
 - **`eval-suite`** — no matrix, needs Ollama. Runs `pytest -m live_llm` over the quality-metric
