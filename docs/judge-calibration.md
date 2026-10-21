@@ -73,7 +73,13 @@ Why the cutoffs differ per metric:
 
 ## Held-out result (`test`, n=17)
 
-Pending — run once with the choice above.
+Run once with the choice above; not re-tuned afterwards.
+
+- **answer_relevancy — 82%** [59–100%], MAE 0.19, r 0.59, ~12 s/case. Clears the 80% bar.
+- **faithfulness — 71%** [47–88%], MAE 0.24, r 0.58, ~22 s/case. **Below the 80% bar.**
+- Faithfulness errors flipped direction vs `dev`: 4 of 8 correct (`none`) answers scored 0.0 or
+  0.5, i.e. false rejections, plus 1 hallucinated detail let through at 0.67.
+- n=17 is small — the interval spans 47–88%, so this neither confirms nor rules out an 80% judge.
 
 ## `qwen2.5:0.5b` failure modes (observed)
 
