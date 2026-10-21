@@ -146,6 +146,20 @@ without opening logs:
 A failing security case renders as `SECURITY FAIL (<severity>)`, separated from quality/schema
 failures in its own table — see [docs/security.md](docs/security.md).
 
+## A caught regression
+
+The gate runs against a real (tiny) RAG app, [`examples/demo_rag`](examples/demo_rag/), not
+only hand-written outputs. Regression demo: branch `demo/regression-top1-retrieval` makes one
+plausible change, `TOP_K = 3` → `1` ("one chunk is enough, halves prompt size").
+
+- **CI gate (`demo-rag` job, `context_recall`):** 12/12 → 8/12 — exit 1, all four multi-hop
+  questions lose a fact they need. Deterministic, so no judge noise.
+- **Calibrated judge (`qwen2.5:7b`, local):** 20/24 → 19/24; faithfulness avg 0.88 → 0.83,
+  relevancy 0.79 → 0.71. The bot says "the context doesn't say", which is *faithful*, so judge
+  metrics barely move. Why the gate checks retrieval directly: see [docs/test-strategy.md](docs/test-strategy.md).
+- The regression PR is kept open-unmerged as evidence; red-team results for the same app are in
+  [docs/security.md](docs/security.md#against-a-real-app-the-demo-rag-bot).
+
 ## Development setup
 
 ```bash

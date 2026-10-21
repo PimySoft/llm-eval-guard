@@ -8,7 +8,9 @@ checks apply to any app wired in through a suite `generator`.
 
 - **Retrieval regression** (wrong or fewer chunks reach the prompt) → `context_recall`
   (`demo` suite): every fact a question needs must be in the retrieved context. Deterministic,
-  so it gates CI (`demo-rag` job) exactly.
+  so it gates CI (`demo-rag` job) exactly. Why not leave this to the judge: on the top-1
+  regression demo, `context_recall` fell 12/12 → 8/12 while judge pass rate fell only 20/24 →
+  19/24 — an answer saying "the context doesn't cover that" is faithful, just useless.
 - **Hallucination / unsupported claims** → `faithfulness` (`quality`, `demo_quality`): judge
   checks each claim against `retrieval_context`. Calibrated: 71% held-out agreement.
 - **Off-topic or non-answers** → `answer_relevancy`: 82% held-out agreement. Scored separately
