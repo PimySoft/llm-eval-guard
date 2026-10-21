@@ -21,6 +21,9 @@ suites:
         threshold: 0.6
       - name: answer_relevancy
         threshold: 0.5
+      # Rule-based, no judge call — the one check `leg run --fast` runs.
+      - name: pii_leakage
+        fast: true
 
 # qwen2.5:7b is the calibrated judge; `leg run --judge ci` uses the fast, uncalibrated one.
 judge:

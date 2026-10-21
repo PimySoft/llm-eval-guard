@@ -366,11 +366,11 @@ Goal: ship it. This replaces the outstanding Phase 6.4 tag step, so the publishe
 
 - [ ] Fix the Phase 6 DoD note that says the repo has no GitHub remote (it now has one); make sure the repo is public
 - [ ] Register the PyPI trusted publisher (one-time setup, see the "Release workflow" section of `docs/ci-setup.md`)
-- [ ] Verify the README quickstart end-to-end in a clean container (`pip install` from TestPyPI or a built wheel → `leg init` → `leg run --fast`)
+- [x] Verify the README quickstart end-to-end in a clean container (`pip install` from TestPyPI or a built wheel → `leg init` → `leg run --fast`)
 - [ ] Update `CHANGELOG.md` with Phases 7–10, then `git tag v0.1.0 && git push --tags` — a manual, human step
 - [ ] Confirm the PyPI page renders and the PyPI badge in the README resolves
 
-**Definition of Done:** `pip install llm-eval-guard` works from public PyPI on a clean machine, and the README quickstart passes as written.
+**Definition of Done:** `pip install llm-eval-guard` works from public PyPI on a clean machine, and the README quickstart passes as written. **Partially met** — the quickstart passes as written from a built wheel in a clean `python:3.10-slim` container: `leg init` scaffolds, `leg run --fast` scores 1/1 with no network call, and the scaffolded pytest example auto-skips without Ollama. The check found three bugs, now fixed: the scaffolded suite had no fast metric, so `--fast` evaluated nothing and "passed"; `leg --help` printed an internal developer note; and the unquoted `[deepeval]` extra fails under zsh. Pending human steps: PyPI trusted-publisher registration, the `v0.1.0` tag/push, and checking the PyPI page and badge after publish.
 
 ---
 

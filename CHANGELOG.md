@@ -79,6 +79,12 @@ All notable changes to this project are documented in this file. Format follows
 
 - Judge-result cache (`core/cache.py`) now keys on the judge model and threshold too — switching
   either previously served stale scores and pass/fail calls from the old one.
+- `leg init`'s scaffolded suite now includes a rule-based `pii_leakage` check, so the
+  quickstart's `leg run --fast` scores the sample case instead of evaluating nothing; found
+  verifying the quickstart from a built wheel in a clean container.
+- `leg --help` no longer prints an internal developer note as the CLI description.
+- README quickstart quotes `"llm-eval-guard[deepeval]"` — unquoted, zsh treats the brackets as
+  a glob and the install fails.
 
 ### Known limitations
 

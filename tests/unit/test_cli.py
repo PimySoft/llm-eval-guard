@@ -177,14 +177,15 @@ def test_init_scaffolds_a_runnable_project(tmp_path: Path, monkeypatch: pytest.M
     assert (tmp_path / "datasets/golden/sample.jsonl").exists()
     assert (tmp_path / "tests/test_llm_eval_guard_example.py").exists()
 
-    # `leg run --fast` skips the live-judge metric, so the scaffolded config/dataset must still
-    # parse and load cleanly even though the `quality` suite itself has nothing fast to run.
+    # `leg run --fast` skips the live-judge metrics but must still score the sample case with the
+    # rule-based one — an empty run would "pass" a quickstart that checked nothing.
     # Dataset paths in leg.config.yaml resolve relative to the CWD `leg run` is invoked from, not
     # the config file's own directory (core/dataset.py) — chdir to match how a real `leg init &&
     # leg run` from inside the scaffolded project would resolve them.
     monkeypatch.chdir(tmp_path)
     run_result = runner.invoke(app, ["run", "--fast", "--config", "leg.config.yaml"])
     assert run_result.exit_code == 0
+    assert "1/1 passed" in run_result.output
 
 
 def test_init_does_not_overwrite_without_force(tmp_path: Path) -> None:
