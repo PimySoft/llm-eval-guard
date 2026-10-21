@@ -55,6 +55,9 @@ All notable changes to this project are documented in this file. Format follows
 - **Phase 10 (in progress):** `PIILeakageMetric` detects UK National Insurance numbers, UK
   phone numbers, UK postcodes and IBANs; credit cards must pass a Luhn check and IBANs mod-97, so
   arbitrary 16-digit IDs no longer fail; echoed PII matches regardless of spacing/hyphens.
+  `ComplianceMetric` ignores markers inside quoted spans or after a same-clause refusal ("I won't
+  wire $500"); remaining marker-matching limits documented in
+  [docs/security.md](docs/security.md#remaining-limits-of-marker-matching).
 
 ### Fixed
 
