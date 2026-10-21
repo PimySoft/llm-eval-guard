@@ -31,7 +31,6 @@ def assert_matches_snapshot(rendered: str, snapshot_path: Path, *, update: bool)
             f"no snapshot at {snapshot_path} — created it from the current render; "
             "review it and commit it, then re-run"
         )
-        return
 
     if update:
         snapshot_path.write_text(rendered, encoding="utf-8")

@@ -71,8 +71,10 @@ jobs:
       - uses: ./.github/actions/setup-python-poetry
         with:
           python-version: ${{ matrix.python-version }}
-      - name: pytest
-        run: poetry run pytest
+      - name: pytest (with coverage)
+        run: poetry run coverage run -m pytest
+      - name: coverage gate (fail_under = 80, pyproject.toml)
+        run: poetry run coverage report
 
   schema-drift:
     # Phase 3.3's `leg run --fast` path: schema validation + prompt-drift, zero network calls.

@@ -10,7 +10,7 @@ threshold. Problem statement, target user, and non-goals are in [VISION.md](VISI
 phased build roadmap with per-phase Definition of Done is in [plan.md](plan.md) — check plan.md
 before assuming a module described below actually exists yet.
 
-**Current state:** Phases 1–9 done (7 pending the human re-label pass); next is Phase 10.
+**Current state:** Phases 1–10 done (7 pending the human re-label pass); next is Phase 11.
 plan.md checkboxes are the source of truth. When building a phase, follow its plan.md checklist
 rather than improvising a different shape.
 
@@ -32,7 +32,7 @@ make lint       # ruff check .
 make format     # ruff format .
 make typecheck  # mypy
 make test       # pytest
-make cov        # pytest with coverage report (target ≥80%, Phase 10)
+make cov        # coverage run -m pytest + report; fails under 80% (same gate as CI)
 
 poetry run python scripts/calibrate_judge.py --model <ollama-model>   # judge vs human labels
 ```
@@ -57,7 +57,8 @@ integration tests are strict xfails (`tests/integration/_judge.py`). See `docs/j
   prose, no Markdown tables, no paragraph over ~4 lines, one "Why:" line for a non-obvious design
   choice rather than a discussion, don't restate what the code already shows. `docs/` stays flat,
   one file per concern, split a file past ~150 lines.
-- `xfail` must be `strict=True` with a `reason`; never add a non-strict one. Judge-dependent
+- `xfail` must be `strict=True` with a `reason`; never add a non-strict one (`xfail_strict = true`
+  in `pyproject.toml` makes strict the default). Judge-dependent
   ones use `xfail_under_ci_judge` (`tests/integration/_judge.py`).
 - `examples/` (Phase 9 demo app): ruff already covers it; add it to mypy `files` in
   `pyproject.toml` when created. No new heavy dependency (hand-rolled keyword/BM25 retriever);

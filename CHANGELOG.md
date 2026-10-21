@@ -52,9 +52,22 @@ All notable changes to this project are documented in this file. Format follows
   README "A caught regression": top-1 retrieval regression caught by the `demo` gate (12/12 →
   8/12) while the calibrated judge barely moved (20/24 → 19/24); the red regression PR (#2) and
   its job-summary screenshot are linked from the README.
+- **Phase 10:** `PIILeakageMetric` detects UK National Insurance numbers, UK
+  phone numbers, UK postcodes and IBANs; credit cards must pass a Luhn check and IBANs mod-97, so
+  arbitrary 16-digit IDs no longer fail; echoed PII matches regardless of spacing/hyphens.
+  `ComplianceMetric` ignores markers inside quoted spans or after a same-clause refusal ("I won't
+  wire $500"); remaining marker-matching limits documented in
+  [docs/security.md](docs/security.md#remaining-limits-of-marker-matching).
+  Test suite runs warning-free: `xfail_strict = true`, `asyncio_default_fixture_loop_scope` set,
+  and a `DeprecationWarning` from `llm_eval_guard` code is now a test error. Coverage is measured
+  with `coverage run -m pytest` (pytest-cov started after our `pytest11` entry point imported the
+  package, under-reporting 96% as 67%); the `unit-tests` CI job and `make cov` fail below 80%.
 
 ### Fixed
 
+- `import llm_eval_guard.security` (or `.schema`/`.metrics`) as a program's first import no longer
+  fails with a circular `ImportError`; `core`'s runner re-exports are now lazy. Caught by a new
+  per-module cold-import test.
 - A judge-metric call that raises (e.g. the 0.5B `ci` judge looping until DeepEval's timeout) now
   fails that one case with a `judge error` reason instead of crashing the whole `leg run`; errored
   results aren't cached. Rule-based metric errors still raise.
