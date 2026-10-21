@@ -55,6 +55,9 @@ All notable changes to this project are documented in this file. Format follows
 
 ### Fixed
 
+- `import llm_eval_guard.security` (or `.schema`/`.metrics`) as a program's first import no longer
+  fails with a circular `ImportError`; `core`'s runner re-exports are now lazy. Caught by a new
+  per-module cold-import test.
 - A judge-metric call that raises (e.g. the 0.5B `ci` judge looping until DeepEval's timeout) now
   fails that one case with a `judge error` reason instead of crashing the whole `leg run`; errored
   results aren't cached. Rule-based metric errors still raise.
