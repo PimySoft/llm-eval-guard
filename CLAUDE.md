@@ -14,8 +14,10 @@ before assuming a module described below actually exists yet.
 validation, prompt-drift testing, `leg run`/`leg init` CLI, the red-team security suite, CI/CD
 wiring, and Markdown/JSON reporting into `$GITHUB_STEP_SUMMARY`). Phase 6 docs (README,
 `docs/architecture.md`, `SECURITY.md`, `CHANGELOG.md`, PyPI package metadata, tag-triggered
-release workflow) are done; only the actual `v0.1.0` tag/push/PyPI-publish is outstanding — see
-plan.md Phase 6.4. When building a phase, follow that phase's plan.md checklist rather than
+release workflow) are done. Phase 7 (golden dataset expansion to 56 labeled cases with `failure_mode`
+tags and a `dev`/`test` split) is done except the human self-agreement re-label pass. Phases 8–10
+(calibrated judge, demo RAG app + caught regression, security hardening) are not started yet; the `v0.1.0`
+tag/PyPI-publish moved to Phase 11. When building a phase, follow that phase's plan.md checklist rather than
 improvising a different shape.
 
 ## Commands
@@ -98,6 +100,8 @@ threshold)`, `calibration` (`pyproject.toml` `[tool.pytest.ini_options]`).
 - `datasets/golden/*.jsonl` — hand-written RAG QA/context triples, each with hand-assigned
   `human_faithfulness`/`human_relevancy` labels used to calibrate the LLM judge against ground
   truth (Phase 2.6 — the judge is only trusted once it's checked against these).
+  `sample_rag_qa.jsonl` cases also carry `id`, `split` (`dev`/`test`), `category` and
+  `failure_mode` — rules in `docs/datasets.md`, enforced by `tests/unit/test_dataset.py`.
 - `datasets/redteam/*.jsonl` — adversarial payloads (prompt injection, jailbreak, PII-elicitation).
   Every entry must carry `attack_category`, `severity`, `expected_behavior`, and must never contain
   real PII — synthetic data only (see CONTRIBUTING.md).

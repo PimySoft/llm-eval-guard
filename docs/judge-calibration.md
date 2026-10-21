@@ -29,7 +29,8 @@ is the only place the known-bad cases (hallucinations, off-topic answers) get ch
 
 ## Result: `qwen2.5:0.5b` fails calibration
 
-Measured against the 15-case golden set (`--min-agreement 0.8`, the default):
+Measured against the original 15-case golden set (`--min-agreement 0.8`, the default), before the
+Phase 7 expansion to 56 cases — re-measuring on the new `dev`/`test` splits is Phase 8:
 
 - **faithfulness** — agreement **40%**, MAE 0.59, Pearson r -0.21, n=15
 - **answer_relevancy** — agreement **20%**, MAE 0.60, Pearson r -0.16, n=15
