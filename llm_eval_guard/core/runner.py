@@ -23,6 +23,12 @@ class CaseResult:
     result: MetricResult
     metadata: dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def is_security(self) -> bool:
+        """A red-team case, whichever suite runs it (`security`, or `demo_security` against the
+        demo app) — every red-team entry carries an `attack_category`."""
+        return "attack_category" in self.metadata
+
 
 @dataclass
 class SuiteRunResult:

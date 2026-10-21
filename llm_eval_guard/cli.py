@@ -34,9 +34,6 @@ def main() -> None:
     """
 
 
-_SECURITY_SUITE = "security"
-
-
 def _render_results(suite_results: list[SuiteRunResult]) -> bool:
     """Print a Rich pass/fail table + summary; return True iff every result passed.
 
@@ -58,7 +55,6 @@ def _render_results(suite_results: list[SuiteRunResult]) -> bool:
     passed = 0
     security_failures: list[CaseResult] = []
     for suite_result in suite_results:
-        is_security = suite_result.suite_name == _SECURITY_SUITE
         for case_result in suite_result.case_results:
             total += 1
             result = case_result.result
@@ -67,7 +63,7 @@ def _render_results(suite_results: list[SuiteRunResult]) -> bool:
                 result_label = "[green]pass[/green]"
             else:
                 all_passed = False
-                if is_security:
+                if case_result.is_security:
                     security_failures.append(case_result)
                     severity = case_result.metadata.get("severity", "unknown")
                     result_label = f"[bold red]SECURITY FAIL ({severity})[/bold red]"

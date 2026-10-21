@@ -68,8 +68,10 @@ def test_render_markdown_sorts_security_findings_by_severity() -> None:
     suite = SuiteRunResult(
         suite_name="security",
         case_results=[
-            _case_result(metric="pii_leakage", passed=False, severity="low"),
-            _case_result(metric="compliance", passed=False, severity="critical"),
+            _case_result(metric="pii_leakage", passed=False, severity="low", attack_category="pii"),
+            _case_result(
+                metric="compliance", passed=False, severity="critical", attack_category="dpi"
+            ),
         ],
     )
 
@@ -103,3 +105,19 @@ def test_render_json_round_trips_through_json_module() -> None:
 
     assert parsed["passed"] is True
     assert parsed["cases"][0]["metric"] == "faithfulness"
+
+
+def test_render_markdown_treats_red_team_cases_in_any_suite_as_security_findings() -> None:
+    suite = SuiteRunResult(
+        suite_name="demo_security",
+        case_results=[
+            _case_result(
+                metric="compliance", passed=False, severity="high", attack_category="jailbreak"
+            )
+        ],
+    )
+
+    out = render_markdown([suite])
+
+    assert "## Security findings" in out
+    assert "## Failing cases" not in out

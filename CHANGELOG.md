@@ -45,6 +45,9 @@ All notable changes to this project are documented in this file. Format follows
   Suites accept a `generator: module.path:function` that produces each case's output from the
   system under test at run time (skipped under `--fast`); new rule-based `context_recall` metric;
   `demo`/`demo_quality` suites and a `demo-rag` CI job gated on `leg run --suite demo`.
+  `demo_security` suite runs the red-team datasets against the demo app; findings in
+  [docs/security.md](docs/security.md). Red-team failures now render as security findings in any
+  suite (keyed on `attack_category`, not the suite name `security`).
 
 ### Fixed
 
