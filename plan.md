@@ -297,7 +297,7 @@ Goal: a README and docs set that lets a new adopter go from zero to a working qu
 - [x] Add a release workflow (`.github/workflows/release.yml`) triggered on git tags, building + publishing to PyPI via trusted publishing (OIDC, no long-lived token)
 - [ ] Tag and cut `v0.1.0` once Phases 1–5 are complete and README quickstart has been manually verified end-to-end on a clean machine/container — *not done: this is a deliberate, one-way action (pushes a tag, and once the PyPI trusted-publisher is registered, publishes a real package) left for a human `git tag`/`git push --tags` rather than taken automatically; see `docs/ci-setup.md`'s "Release workflow" section for the one-time PyPI setup this needs first.*
 
-**Definition of Done:** A new user with no prior context can clone the repo, follow only the README, and get a passing `leg run` against the sample golden dataset within 15 minutes; architecture diagram accurately reflects the shipped code; `v0.1.0` is tagged and published. **Partially met** — `leg init` scaffolds a config + sample dataset + example test that `leg run --fast` passes immediately with zero network calls (verified end-to-end by `tests/unit/test_cli.py::test_init_scaffolds_a_runnable_project`); the scaffolded `tests/test_llm_eval_guard_example.py` plus `ollama pull qwen2.5:0.5b` gets a new user to a real judge-scored `leg run` too, same live-Ollama dependency the rest of the suite already has. `docs/architecture.md` reflects the shipped code. The repo has no GitHub remote yet and `v0.1.0` is not tagged/published (see 6.4 above) — that's a human decision about when to make the repo public and register it on PyPI, not something to do unprompted.
+**Definition of Done:** A new user with no prior context can clone the repo, follow only the README, and get a passing `leg run` against the sample golden dataset within 15 minutes; architecture diagram accurately reflects the shipped code; `v0.1.0` is tagged and published. **Partially met** — `leg init` scaffolds a config + sample dataset + example test that `leg run --fast` passes immediately with zero network calls (verified end-to-end by `tests/unit/test_cli.py::test_init_scaffolds_a_runnable_project`); the scaffolded `tests/test_llm_eval_guard_example.py` plus `ollama pull qwen2.5:0.5b` gets a new user to a real judge-scored `leg run` too, same live-Ollama dependency the rest of the suite already has. `docs/architecture.md` reflects the shipped code. The repo is public at [PimySoft/llm-eval-guard](https://github.com/PimySoft/llm-eval-guard); tagging and publishing `v0.1.0` moved to Phase 11.
 
 ---
 
@@ -364,10 +364,11 @@ Goal: close the specific weaknesses a careful reviewer would spot in the rule-ba
 
 Goal: ship it. This replaces the outstanding Phase 6.4 tag step, so the published version includes Phases 7–10.
 
-- [ ] Fix the Phase 6 DoD note that says the repo has no GitHub remote (it now has one); make sure the repo is public
+- [x] Fix the Phase 6 DoD note that says the repo has no GitHub remote (it now has one); make sure the repo is public
 - [ ] Register the PyPI trusted publisher (one-time setup, see the "Release workflow" section of `docs/ci-setup.md`)
 - [x] Verify the README quickstart end-to-end in a clean container (`pip install` from TestPyPI or a built wheel → `leg init` → `leg run --fast`)
 - [ ] Update `CHANGELOG.md` with Phases 7–10, then `git tag v0.1.0 && git push --tags` — a manual, human step
+  - CHANGELOG done (Phases 7–10 plus the quickstart fixes below); the tag/push is still pending
 - [ ] Confirm the PyPI page renders and the PyPI badge in the README resolves
 
 **Definition of Done:** `pip install llm-eval-guard` works from public PyPI on a clean machine, and the README quickstart passes as written. **Partially met** — the quickstart passes as written from a built wheel in a clean `python:3.10-slim` container: `leg init` scaffolds, `leg run --fast` scores 1/1 with no network call, and the scaffolded pytest example auto-skips without Ollama. The check found three bugs, now fixed: the scaffolded suite had no fast metric, so `--fast` evaluated nothing and "passed"; `leg --help` printed an internal developer note; and the unquoted `[deepeval]` extra fails under zsh. Pending human steps: PyPI trusted-publisher registration, the `v0.1.0` tag/push, and checking the PyPI page and badge after publish.

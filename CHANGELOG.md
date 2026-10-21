@@ -29,17 +29,19 @@ All notable changes to this project are documented in this file. Format follows
 - **Phase 6:** `leg init` scaffolding command; README skills-demonstrated table and quickstart;
   [docs/architecture.md](docs/architecture.md) with data-flow and indirect-injection sequence
   diagrams; `SECURITY.md`; PyPI package metadata and a tag-triggered release workflow.
-- **Phase 8 (in progress):** `scripts/calibrate_judge.py --split dev|test` reports per-
-  `failure_mode` agreement, wall-clock seconds per case, and a bootstrap 95% confidence interval
-  on agreement, plus per-metric judge cutoffs (`--faithfulness-threshold`, `--relevancy-threshold`)
-  and per-case scores in `--json`. Six local judges compared on the `dev` split
-  ([docs/judge-calibration.md](docs/judge-calibration.md)).
-- **Phase 8:** default judge is now the calibrated `qwen2.5:7b`; `judge_profiles` in
-  `leg.config.yaml` plus `leg run --judge <name>` / `LEG_JUDGE_PROFILE` select the fast,
-  uncalibrated `ci` judge (`qwen2.5:0.5b`) that CI runs. Quality-suite thresholds set to the
-  calibrated judge cutoffs (faithfulness 0.6, answer_relevancy 0.5). Judge-scored integration
-  tests are strict `xfail`s only under the `ci` judge.
-- **Phase 9 (in progress):** demo RAG app in `examples/demo_rag/` — markdown knowledge base,
+- **Phase 7:** golden dataset grown to 56 cases (28 pass / 28 fail), each tagged with a
+  `failure_mode` and a `dev`/`test` split (39/17), enforced by `tests/unit/test_dataset.py`;
+  `scripts/relabel_sample.py` samples and scores a blind human re-label pass
+  ([docs/datasets.md](docs/datasets.md)).
+- **Phase 8:** `scripts/calibrate_judge.py --split dev|test` reports per-`failure_mode`
+  agreement, seconds per case, and a bootstrap 95% confidence interval, plus per-metric judge
+  cutoffs and per-case scores in `--json`. Six local judges compared on `dev`; the default judge
+  is now the calibrated `qwen2.5:7b` ([docs/judge-calibration.md](docs/judge-calibration.md)).
+  `judge_profiles` in `leg.config.yaml` plus `leg run --judge <name>` / `LEG_JUDGE_PROFILE`
+  select the fast, uncalibrated `ci` judge (`qwen2.5:0.5b`) that CI runs. Quality-suite
+  thresholds set to the calibrated cutoffs (faithfulness 0.6, answer_relevancy 0.5).
+  Judge-scored integration tests are strict `xfail`s only under the `ci` judge.
+- **Phase 9:** demo RAG app in `examples/demo_rag/` — markdown knowledge base,
   hand-rolled BM25 retriever, generation through `prompts/rag_answer.j2` on local Ollama;
   `GenerationCache` in `core/cache.py` caches its answers keyed on model + rendered prompt.
   Suites accept a `generator: module.path:function` that produces each case's output from the
@@ -71,12 +73,10 @@ All notable changes to this project are documented in this file. Format follows
 - A judge-metric call that raises (e.g. the 0.5B `ci` judge looping until DeepEval's timeout) now
   fails that one case with a `judge error` reason instead of crashing the whole `leg run`; errored
   results aren't cached. Rule-based metric errors still raise.
-
 - Demo app caps answers at 512 tokens — greedy decoding on `qwen2.5:0.5b` looped until the 300 s
   timeout in CI.
 - CLI `--help` tests failed on GitHub Actions, where Typer forces Rich colour codes into the help
   text; ANSI escapes are now stripped before asserting.
-
 - Judge-result cache (`core/cache.py`) now keys on the judge model and threshold too — switching
   either previously served stale scores and pass/fail calls from the old one.
 - `leg init`'s scaffolded suite now includes a rule-based `pii_leakage` check, so the
@@ -87,6 +87,9 @@ All notable changes to this project are documented in this file. Format follows
   a glob and the install fails.
 
 ### Known limitations
+
+- The human self-agreement number for the golden labels (Phase 7) is pending a blind re-label
+  pass, so the ceiling on judge agreement isn't measured yet.
 
 - Held-out faithfulness agreement for the default judge is 71%, below the 80% bar; it's gated at
   a documented, lowered 70% bar — see [docs/judge-calibration.md](docs/judge-calibration.md).
