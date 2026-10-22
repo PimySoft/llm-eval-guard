@@ -451,7 +451,7 @@ Goal: know how consistent the ground truth is, which caps how good any judge can
   - Judge side done: kappa reported (`test` faithfulness 0.43, relevancy 0.48); the human numbers fill in after the two human label passes
 - [ ] `study/08-inter-rater-agreement.md`: why kappa rather than raw agreement, how to read 0.4 vs 0.8, and what to do when humans disagree
 
-**Definition of Done:** self-agreement and inter-rater kappa are both documented; the labeling guide exists; kappa tooling is unit-tested. **In progress** — kappa tooling done and unit-tested; labeling guide written; self-agreement measured (kappa 0.25 / 0.00); inter-rater only simulated with a Claude labeler (kappa 1.00, optimistic); the human second-labeler pass is open.
+**Definition of Done:** self-agreement and inter-rater kappa are both documented; the labeling guide exists; kappa tooling is unit-tested. **Closed by the maintainer (2026-10-22), inter-rater simulated** — kappa tooling done and unit-tested; labeling guide written and revised from both passes; self-agreement measured (kappa 0.25 / 0.00); inter-rater only simulated with a Claude labeler (kappa 1.00, optimistic) because no human second labeler was available. The unticked human item stays open if one becomes available.
 
 ---
 
