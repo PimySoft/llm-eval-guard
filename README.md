@@ -52,7 +52,7 @@ on top of one (DeepEval today). What it adds on top of the raw eval engine:
 ## Quickstart
 
 ```bash
-pip install llm-eval-guard[deepeval]
+pip install "llm-eval-guard[deepeval]"
 ollama pull qwen2.5:7b          # local, $0-cost calibrated judge (qwen2.5:0.5b = fast CI judge)
 
 leg init                        # scaffolds leg.config.yaml + a sample dataset + example test

@@ -110,8 +110,11 @@ v0.1.0 && git push --tags`), not a side effect of merging to `main`.
 
 One-time setup before the first tag push:
 
-1. On [pypi.org](https://pypi.org), register `llm-eval-guard` as a project and add this repo +
-   `release.yml` as a trusted publisher (Project → Publishing → Add a new publisher).
+1. On [pypi.org](https://pypi.org/manage/account/publishing/), add a *pending* trusted publisher
+   (Account → Publishing → GitHub): project `llm-eval-guard`, owner `PimySoft`, repository
+   `llm-eval-guard`, workflow `release.yml`, environment `pypi`.
+   - Why pending: PyPI can't register a project before its first upload — the first successful
+     run of `release.yml` creates it.
 2. In this repo's GitHub settings → Environments, create a `pypi` environment (matches
    `environment: pypi` in `release.yml`) — optionally add a reviewer/protection rule so a tag
    push doesn't auto-publish without a manual approval.

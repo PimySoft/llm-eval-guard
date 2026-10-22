@@ -23,15 +23,12 @@ app = typer.Typer(add_completion=False)
 console = Console()
 
 
+# Why an (otherwise empty) callback: Typer collapses a single `@app.command()` into a bare
+# `leg [OPTIONS]` invocation with no subcommand name — registering a callback keeps `leg run
+# ...`/`leg init ...` the stable CLI surface. Kept out of the docstring, which is `leg --help`.
 @app.callback()
 def main() -> None:
-    """LLM-Eval-Guard: pytest-native CI/CD quality gate for LLM/RAG apps.
-
-    Why an (otherwise empty) callback: Typer collapses a single `@app.command()` into a bare
-    `leg [OPTIONS]` invocation with no subcommand name — registering a callback forces `leg run
-    ...`/`leg init ...` to stay the real, stable CLI surface (matching plan.md) rather than
-    collapsing to a single bare `leg [OPTIONS]`.
-    """
+    """LLM-Eval-Guard: pytest-native CI/CD quality gate for LLM/RAG apps."""
 
 
 def _render_results(suite_results: list[SuiteRunResult]) -> bool:
