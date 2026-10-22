@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- README links and the regression screenshot are absolute GitHub URLs, so they work on the
+  PyPI project page too (relative ones broke there in 0.1.0).
+
 ## [0.1.0] — 2026-10-22
 
 ### Added

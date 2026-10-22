@@ -1,15 +1,16 @@
 # LLM-Eval-Guard
 
+<!-- Why absolute links: this README is also the PyPI page, where relative links break. -->
 [![CI](https://github.com/PimySoft/llm-eval-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/PimySoft/llm-eval-guard/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/llm-eval-guard.svg)](https://pypi.org/project/llm-eval-guard/)
-[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/PimySoft/llm-eval-guard/blob/main/LICENSE)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 > A CI/CD quality gate for LLM and RAG applications — scores outputs against quality, schema,
 > and security metrics, and fails a pull request when thresholds aren't met.
 
-Status: feature-complete for `v0.1.0` (pre-release). Charter: [VISION.md](VISION.md) · roadmap:
-[plan.md](plan.md).
+Status: feature-complete for `v0.1.0` (pre-release). Charter: [VISION.md](https://github.com/PimySoft/llm-eval-guard/blob/main/VISION.md) · roadmap:
+[plan.md](https://github.com/PimySoft/llm-eval-guard/blob/main/plan.md).
 
 ## Why
 
@@ -19,14 +20,14 @@ nothing fails CI. LLM-Eval-Guard is that missing gate: `pytest --cov` discipline
 It's a gating and reporting layer on top of [DeepEval](https://github.com/confident-ai/deepeval),
 not a replacement. What it adds:
 
-- **One `Metric` interface** over engine scores — [`metrics/`](llm_eval_guard/metrics/)
+- **One `Metric` interface** over engine scores — [`metrics/`](https://github.com/PimySoft/llm-eval-guard/tree/main/llm_eval_guard/metrics)
 - **$0 local judge by default** (Ollama); OpenAI/Anthropic only as bring-your-own-key
-- **Judge calibration** against human labels — [docs/judge-calibration.md](docs/judge-calibration.md)
-- **Schema/contract testing**, strict or lenient — [`schema/`](llm_eval_guard/schema/)
-- **Prompt-drift snapshots** for Jinja2 templates — [`prompts/`](llm_eval_guard/prompts/)
-- **Red-team suite**: prompt injection, jailbreak, PII, toxicity — [`security/`](llm_eval_guard/security/)
-- **CI gating + reporting**: `leg run` exit code, job-summary report — [`ci.yml`](.github/workflows/ci.yml)
-- **Test strategy**: risk → check, and what's left out on purpose — [docs/test-strategy.md](docs/test-strategy.md)
+- **Judge calibration** against human labels — [docs/judge-calibration.md](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/judge-calibration.md)
+- **Schema/contract testing**, strict or lenient — [`schema/`](https://github.com/PimySoft/llm-eval-guard/tree/main/llm_eval_guard/schema)
+- **Prompt-drift snapshots** for Jinja2 templates — [`prompts/`](https://github.com/PimySoft/llm-eval-guard/tree/main/llm_eval_guard/prompts)
+- **Red-team suite**: prompt injection, jailbreak, PII, toxicity — [`security/`](https://github.com/PimySoft/llm-eval-guard/tree/main/llm_eval_guard/security)
+- **CI gating + reporting**: `leg run` exit code, job-summary report — [`ci.yml`](https://github.com/PimySoft/llm-eval-guard/blob/main/.github/workflows/ci.yml)
+- **Test strategy**: risk → check, and what's left out on purpose — [docs/test-strategy.md](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/test-strategy.md)
 
 ## Quickstart
 
@@ -75,10 +76,10 @@ judge_profiles:
     model: qwen2.5:0.5b       # fast, uncalibrated: `leg run --judge ci`
 ```
 
-- Every key: [docs/architecture.md](docs/architecture.md#legconfigyaml-reference)
-- Why these thresholds: [docs/thresholds.md](docs/thresholds.md)
-- Custom metric, schema or prompt source: [docs/architecture.md](docs/architecture.md#extension-points)
-- New red-team entry: [`datasets/redteam/README.md`](datasets/redteam/README.md)
+- Every key: [docs/architecture.md](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/architecture.md#legconfigyaml-reference)
+- Why these thresholds: [docs/thresholds.md](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/thresholds.md)
+- Custom metric, schema or prompt source: [docs/architecture.md](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/architecture.md#extension-points)
+- New red-team entry: [`datasets/redteam/README.md`](https://github.com/PimySoft/llm-eval-guard/blob/main/datasets/redteam/README.md)
 
 ## What a CI run looks like
 
@@ -95,22 +96,22 @@ judge_profiles:
 - **security / compliance** — 6/6 passed (100%), avg score 1.00
 ```
 
-Security failures get their own section, sorted by severity — see [docs/security.md](docs/security.md#reporting).
+Security failures get their own section, sorted by severity — see [docs/security.md](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/security.md#reporting).
 
 ## A caught regression
 
-The gate also runs against a real (tiny) RAG app, [`examples/demo_rag`](examples/demo_rag/).
+The gate also runs against a real (tiny) RAG app, [`examples/demo_rag`](https://github.com/PimySoft/llm-eval-guard/tree/main/examples/demo_rag).
 [PR #2](https://github.com/PimySoft/llm-eval-guard/pull/2) changes `TOP_K = 3` → `1` ("one chunk
 is enough") and CI goes red ([run](https://github.com/PimySoft/llm-eval-guard/actions/runs/39652782076)).
 
-![demo-rag job summary on the regression PR: context_recall 8/12, four multi-hop questions missing a fact](docs/img/regression-demo-summary.png)
+![demo-rag job summary on the regression PR: context_recall 8/12, four multi-hop questions missing a fact](https://raw.githubusercontent.com/PimySoft/llm-eval-guard/main/docs/img/regression-demo-summary.png)
 
 - **CI gate (`context_recall`):** 12/12 → 8/12, exit 1 — every multi-hop question loses a fact.
   Deterministic, so no judge noise.
 - **Calibrated judge:** 20/24 → 19/24. "The context doesn't say" is *faithful*, so judge
   metrics barely move — why the gate checks retrieval directly.
 - PR #2 stays open, never merged, as evidence. Red-team results for the same app:
-  [docs/security.md](docs/security.md#against-a-real-app-the-demo-rag-bot).
+  [docs/security.md](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/security.md#against-a-real-app-the-demo-rag-bot).
 
 ## Development
 
@@ -118,17 +119,17 @@ is enough") and CI goes red ([run](https://github.com/PimySoft/llm-eval-guard/ac
 make install && poetry run pre-commit install && make test
 ```
 
-- Prerequisites and workflow: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Prerequisites and workflow: [CONTRIBUTING.md](https://github.com/PimySoft/llm-eval-guard/blob/main/CONTRIBUTING.md)
 - Judge trust: the default judge agrees with human labels 82% (relevancy) and 71% (faithfulness)
-  held-out — read [docs/judge-calibration.md](docs/judge-calibration.md) before trusting scores
+  held-out — read [docs/judge-calibration.md](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/judge-calibration.md) before trusting scores
 
 ## Docs
 
-- [architecture](docs/architecture.md) — data flow, config keys, extension points
-- [thresholds](docs/thresholds.md) — every cutoff and why
-- [datasets](docs/datasets.md) — golden dataset schema and labeling rules
-- [prompt-testing](docs/prompt-testing.md) — prompt contracts and drift snapshots
-- [security](docs/security.md) — red-team metrics and findings
-- [ci-setup](docs/ci-setup.md) — CI jobs, branch protection, release
-- [judge-calibration](docs/judge-calibration.md) — how far to trust the judge
-- [test-strategy](docs/test-strategy.md) — risks, checks, and gaps
+- [architecture](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/architecture.md) — data flow, config keys, extension points
+- [thresholds](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/thresholds.md) — every cutoff and why
+- [datasets](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/datasets.md) — golden dataset schema and labeling rules
+- [prompt-testing](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/prompt-testing.md) — prompt contracts and drift snapshots
+- [security](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/security.md) — red-team metrics and findings
+- [ci-setup](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/ci-setup.md) — CI jobs, branch protection, release
+- [judge-calibration](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/judge-calibration.md) — how far to trust the judge
+- [test-strategy](https://github.com/PimySoft/llm-eval-guard/blob/main/docs/test-strategy.md) — risks, checks, and gaps
