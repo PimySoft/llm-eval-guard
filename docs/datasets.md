@@ -63,8 +63,8 @@ One JSON object per line. Loaded via `llm_eval_guard.core.load_golden_dataset`.
   [labeling-guide.md](labeling-guide.md)
 - `scripts/relabel_sample.py` reports pass/fail agreement, Cohen's kappa, exact agreement, MAE and
   the differing ids per label. Why kappa: on a 50/50 pass/fail set, chance alone agrees 50%
-- Every labeler gets the same blind sample (fixed seed): at least 20%, i.e. 12 cases, with no
-  labels, notes, failure modes or expected outputs
+- Each sample is blind (no labels, notes, failure modes or expected outputs) and at least 20%,
+  i.e. 12 cases; a fixed seed makes it reproducible
 
 Self-agreement (the original labeler, again):
 
@@ -87,10 +87,13 @@ Self-agreement (the original labeler, again):
 
 Inter-rater agreement (a second labeler, guide only):
 
-- `... sample --labeler <name>` writes `sample_rag_qa.relabel.<name>.jsonl`; they label it using
-  only [labeling-guide.md](labeling-guide.md), then `... score --labeler <name>`
-- `... compare A.jsonl B.jsonl` compares any two filled-in files, e.g. the second labeler against
-  your own re-label
+- `... sample --labeler <name> --exclude datasets/golden/sample_rag_qa.relabel.jsonl` writes
+  `sample_rag_qa.relabel.<name>.jsonl`: 12 cases drawn from the 44 not in the self-agreement pass
+- Why exclude: the guide's checklist was revised on those 12 cases, so labeling them again would
+  inflate agreement
+- They label it using only [labeling-guide.md](labeling-guide.md), then `... score --labeler <name>`
+  scores it against the original labels
+- `... compare A.jsonl B.jsonl` compares any two filled-in files covering the same cases
 - Review the differing ids together and fix the guide, never the `test` labels
 - Result: **not yet measured** — record kappa per label and the guide changes it led to
 

@@ -9,6 +9,10 @@ Usage:
     python scripts/relabel_sample.py sample --labeler alex     # same cases, for a second labeler
     python scripts/relabel_sample.py score --labeler alex      # alex vs the originals
     python scripts/relabel_sample.py compare A.jsonl B.jsonl   # any two filled-in label files
+
+    # a sample with no cases from an earlier pass (e.g. ones the guide was revised on):
+    python scripts/relabel_sample.py sample --labeler alex \
+        --exclude datasets/golden/sample_rag_qa.relabel.jsonl
 """
 
 from __future__ import annotations
@@ -77,6 +81,13 @@ def main(argv: list[str] | None = None) -> int:
         if name == "sample":
             cmd.add_argument("--fraction", type=float, default=0.2)
             cmd.add_argument("--seed", type=int, default=2026)
+            cmd.add_argument(
+                "--exclude",
+                type=Path,
+                action="append",
+                default=[],
+                help="Label file whose case ids to leave out of the sample (repeatable)",
+            )
 
     compare = sub.add_parser("compare")
     compare.add_argument("file_a", type=Path)
@@ -99,7 +110,8 @@ def main(argv: list[str] | None = None) -> int:
         if relabel_file.exists():
             print(f"{relabel_file} already exists — not overwriting", file=sys.stderr)
             return 1
-        records = blind_sample(cases, args.fraction, args.seed, args.labeler)
+        exclude = frozenset(r["id"] for path in args.exclude for r in _read_records(path))
+        records = blind_sample(cases, args.fraction, args.seed, args.labeler, exclude)
         relabel_file.write_text(
             "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in records), encoding="utf-8"
         )

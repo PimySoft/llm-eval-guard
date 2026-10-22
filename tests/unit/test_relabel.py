@@ -47,6 +47,22 @@ def test_blind_sample_picks_the_fraction_and_hides_label_hints() -> None:
         assert record["labeler"] == "alex"
 
 
+def test_blind_sample_leaves_out_excluded_ids() -> None:
+    excluded = frozenset(f"rag-{i}" for i in range(5))
+
+    sample = blind_sample(_cases(), fraction=0.3, seed=1, labeler="alex", exclude=excluded)
+
+    assert len(sample) == 3  # still 30% of all 10 cases
+    assert not {r["id"] for r in sample} & excluded
+
+
+def test_blind_sample_rejects_a_pool_too_small_after_exclusions() -> None:
+    excluded = frozenset(f"rag-{i}" for i in range(9))
+
+    with pytest.raises(ValueError, match="only 1 cases left"):
+        blind_sample(_cases(), fraction=0.2, seed=1, labeler="alex", exclude=excluded)
+
+
 def test_blind_sample_rounds_up_so_the_fraction_is_a_minimum() -> None:
     assert len(blind_sample(_cases(), fraction=0.15, seed=1, labeler="self")) == 2  # 1.5 -> 2
 

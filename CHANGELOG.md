@@ -20,6 +20,8 @@ All notable changes to this project are documented in this file. Format follows
   `sample_rag_qa.relabel.jsonl` is committed as evidence.
 - The labeling guide opens with a per-case checklist (claim-by-claim check, wrong-plan and
   comparative claims, refusals are faithful, relevancy is 0 or 1), from the self-agreement misses.
+- `relabel_sample.py sample --exclude <file>` leaves an earlier pass's cases out of a new sample,
+  so the second labeler isn't scored on cases the guide was revised on.
 
 ### Fixed
 

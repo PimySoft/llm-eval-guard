@@ -444,6 +444,7 @@ Goal: know how consistent the ground truth is, which caps how good any judge can
 - [x] Extend `core/relabel.py` + `scripts/relabel_sample.py` with a `--labeler` field, plus Cohen's kappa and percent agreement between any two label sets; unit-test kappa against a hand-computed example
   - Done: `relabel_sample.py sample|score --labeler`, `compare A B`; `cohen_kappa` lives in `core/calibration.py`, so `calibrate_judge.py` reports the judge's kappa too; samples round up, so 20% is 12 cases, not 11
 - [ ] Human step: a second person labels a random ≥20% sample using only the guide; report inter-rater kappa in `docs/datasets.md`; list disagreements and fix the guide (not the `test` labels)
+  - `--exclude` the self-agreement sample: the checklist was revised on those 12 cases, so re-using them would inflate kappa
 - [ ] Update `docs/judge-calibration.md`: compare judge agreement against the human ceiling
   - Judge side done: kappa reported (`test` faithfulness 0.43, relevancy 0.48); the human numbers fill in after the two human label passes
 - [ ] `study/08-inter-rater-agreement.md`: why kappa rather than raw agreement, how to read 0.4 vs 0.8, and what to do when humans disagree

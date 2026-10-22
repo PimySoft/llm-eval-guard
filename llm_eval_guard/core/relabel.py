@@ -28,15 +28,24 @@ LabelSet = dict[str, dict[str, float]]
 
 
 def blind_sample(
-    cases: list[EvalCase], fraction: float, seed: int, labeler: str
+    cases: list[EvalCase],
+    fraction: float,
+    seed: int,
+    labeler: str,
+    exclude: frozenset[str] = frozenset(),
 ) -> list[dict[str, Any]]:
     """Pick at least ``fraction`` of ``cases`` at random and strip everything that hints at the
     original label (``expected_output``, ``note``, ``failure_mode``, the labels themselves).
 
     The same ``seed`` gives every labeler the same cases, so their label sets can be compared.
+    ``exclude`` drops ids from the pool (e.g. cases the labeling guide was revised on); the sample
+    size is still ``fraction`` of all cases.
     """
     k = max(1, math.ceil(len(cases) * fraction))
-    picked = random.Random(seed).sample(cases, k)
+    pool = [case for case in cases if case.metadata["id"] not in exclude]
+    if len(pool) < k:
+        raise ValueError(f"only {len(pool)} cases left after exclusions, need {k}")
+    picked = random.Random(seed).sample(pool, k)
     return [
         {
             "id": case.metadata["id"],
