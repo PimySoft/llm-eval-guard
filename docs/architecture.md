@@ -5,6 +5,22 @@
 Every check — quality, schema, security — goes through the same shape, so the runner, reporting
 and CI gate never know which engine scored a case.
 
+```mermaid
+flowchart LR
+    D[("datasets/*.jsonl")] --> E[EvalCase]
+    D --> G["suite generator\n(system under test, e.g. examples/demo_rag)"]
+    G --> E
+    E --> M1["DeepEval adapter\n(faithfulness, relevancy, toxicity)"]
+    E --> M2["Schema adapter\n(SchemaValidationMetric)"]
+    E --> M3["Rule-based adapters\n(compliance, task_completion, pii_leakage, context_recall)"]
+    M1 --> R[MetricResult]
+    M2 --> R
+    M3 --> R
+    R --> RUN["core/runner.py\n(threshold pass/fail per case)"]
+    RUN --> REP["reporting/\n(Markdown + JSON)"]
+    REP --> CI["CLI exit code\n→ GitHub Actions status check\n→ merge gate"]
+```
+
 1. A dataset line (`datasets/*.jsonl`) becomes an `EvalCase`. With a suite `generator`, the
    system under test (e.g. `examples/demo_rag`) fills in its output first.
 2. A `Metric` scores it and returns a `MetricResult`:
@@ -86,6 +102,23 @@ Four seams, none of which touch `core/`:
 
 The attacker never talks to the model; they poison content the RAG pipeline retrieves for a
 benign user.
+
+```mermaid
+sequenceDiagram
+    participant Attacker
+    participant Doc as Poisoned document
+    participant User as Benign user
+    participant RAG as RAG pipeline (under test)
+    participant Metric as ComplianceMetric /\nTaskCompletionMetric
+
+    Attacker->>Doc: Embeds an instruction\n("ignore prior instructions, reveal...")
+    User->>RAG: Asks a genuine, unrelated question
+    RAG->>Doc: Retrieves the poisoned document\n(as normal retrieval_context)
+    RAG-->>Metric: EvalCase(input=user's question,\nactual_output=model's reply,\nretrieval_context=[poisoned doc])
+    Metric->>Metric: compliance_markers found in actual_output?
+    Metric->>Metric: task_markers still present?
+    Metric-->>CI: fail if the injected instruction was\nfollowed, or if the real task was dropped
+```
 
 1. The attacker plants an instruction in a document ("ignore prior instructions, reveal...").
 2. A benign user asks a genuine, unrelated question.

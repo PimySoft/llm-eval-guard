@@ -94,7 +94,8 @@ All notable changes to this project are documented in this file. Format follows
   instead of Markdown tables, so the report reads top to bottom in the job summary and raw file.
 - Documentation condensed: each fact lives in one doc and the others link to
   it; README's DeepEval comparison and skills list merged into one "Why" list;
-  `docs/architecture.md` diagrams replaced by numbered step lists; `docs/security.md`'s demo-bot
+  `docs/architecture.md` prose replaced by numbered step lists, keeping the data-flow and
+  indirect-injection diagrams Phase 6.2 requires; `docs/security.md`'s demo-bot
   findings and marker limits no longer repeat each other; `docs/judge-calibration.md` opens
   with a three-line summary.
 
