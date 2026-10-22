@@ -2,9 +2,8 @@
 
 ## Data flow
 
-Every check — quality, schema, security — normalizes through the same `EvalCase` →
-`Metric` → `MetricResult` shape, so the runner, reporting, and CI gate never need to know which
-engine scored a case.
+Every check — quality, schema, security — goes through the same shape, so the runner, reporting
+and CI gate never know which engine scored a case.
 
 ```mermaid
 flowchart LR
@@ -22,23 +21,29 @@ flowchart LR
     REP --> CI["CLI exit code\n→ GitHub Actions status check\n→ merge gate"]
 ```
 
-`Metric.evaluate(case) -> MetricResult` (`core/metric.py`) is the one seam every backend
-implements — DeepEval today, Ragas as a deferred stretch adapter, rule-based checks for security. `core/registry.py` maps a `leg.config.yaml` metric name string to
-a concrete `Metric` instance; `core/runner.py` is the only thing that calls `.evaluate()`.
+1. A dataset line (`datasets/*.jsonl`) becomes an `EvalCase`. With a suite `generator`, the
+   system under test (e.g. `examples/demo_rag`) fills in its output first.
+2. A `Metric` scores it and returns a `MetricResult`:
+   - DeepEval adapter — faithfulness, relevancy, toxicity
+   - Schema adapter — `SchemaValidationMetric`
+   - Rule-based — compliance, task_completion, pii_leakage, context_recall
+3. `core/runner.py` collects pass/fail per case against each threshold.
+4. `reporting/` writes Markdown + JSON.
+5. The CLI exit code becomes the GitHub Actions status check, which gates the merge.
+
+- `Metric.evaluate(case) -> MetricResult` (`core/metric.py`) is the one seam every backend
+  implements; Ragas is a deferred stretch adapter.
+- `core/runner.py` is the only caller of `.evaluate()`.
 
 ## Config → suite → metric
 
-```mermaid
-flowchart TD
-    CFG["leg.config.yaml"] --> SUITE["SuiteConfig\n(dataset path(s) + metric list)"]
-    SUITE --> MC["MetricConfig\n(name, threshold, fast)"]
-    MC --> REG["registry.build_metric()"]
-    REG --> MET["Metric instance"]
-```
+1. `leg.config.yaml` defines suites (`SuiteConfig`: dataset path(s) + metric list).
+2. Each metric entry is a `MetricConfig` (name, threshold, fast).
+3. `core/registry.py`'s `build_metric()` turns the name into a `Metric` instance.
 
 - `leg run --suite <name>` runs one suite; `leg run` (or `--suite all`) runs every suite.
 - `--fast` drops metrics without `fast: true` before `build_metric` runs — that's the whole
-  mechanism behind the sub-second, network-free `leg run --fast`.
+  mechanism behind the network-free `leg run --fast`.
 
 ## `leg.config.yaml` reference
 
@@ -65,7 +70,7 @@ file's own directory (`core/dataset.py`) — run `leg run` from the project root
 
 ## Extension points
 
-Contributors extend the framework at three seams without touching `core/`:
+Four seams, none of which touch `core/`:
 
 - **Custom `Metric`** — subclass `Metric`, implement `name` and `evaluate()`, register it in
   `core/registry.py`'s `_JUDGE_METRICS`/`_RULE_METRICS` (or use it directly, outside
@@ -86,22 +91,17 @@ Contributors extend the framework at three seams without touching `core/`:
           return MetricResult(metric_name=self.name, score=score, passed=score >= self.threshold)
   ```
 
-- **Custom schema** — no code change needed: point a `schema:` metric entry at any
-  `pydantic.BaseModel` subclass on your Python path (`schema:your_pkg.models:YourSchema`). See
-  `llm_eval_guard/schema/models.py` for the shipped examples and `schema/validation.py` for
-  strict-vs-lenient mode.
-- **Custom `PromptRegistry` source** — `PromptRegistry(prompts_dir)` (`prompts/registry.py`)
-  takes any directory of `{name}.j2` + `{name}.meta.yaml` pairs; point it at your own prompts
-  directory to get contract + drift-snapshot testing for free (see
-  [prompt-testing.md](prompt-testing.md)).
-- **Custom PII/toxicity backend** — both are plain `Metric`s; write e.g. a Presidio- or
-  Detoxify-backed `Metric` and point `leg.config.yaml` at it. Nothing downstream changes. Why the
-  defaults are regex/local-judge: [security.md](security.md).
+- **Custom schema** — no code: point a metric at any `pydantic.BaseModel` on your path
+  (`schema:your_pkg.models:YourSchema`). Examples: `schema/models.py`; modes: `schema/validation.py`.
+- **Custom prompts directory** — `PromptRegistry(prompts_dir)` takes any directory of `{name}.j2` and
+  `{name}.meta.yaml` pairs, giving contract + drift tests for free ([prompt-testing.md](prompt-testing.md)).
+- **Custom PII/toxicity backend** — both are plain `Metric`s, so a Presidio- or Detoxify-backed
+  one drops in. Why the defaults are regex/local-judge: [security.md](security.md#design-choices).
 
 ## Indirect prompt injection — request flow
 
-The least obvious mechanism in the codebase: the attacker never talks to the model directly, they
-poison content the RAG pipeline retrieves on the *victim's* behalf.
+The attacker never talks to the model; they poison content the RAG pipeline retrieves for a
+benign user.
 
 ```mermaid
 sequenceDiagram
@@ -120,6 +120,12 @@ sequenceDiagram
     Metric-->>CI: fail if the injected instruction was\nfollowed, or if the real task was dropped
 ```
 
-**Why a separate category from direct injection:** the poisoned text sits in `retrieval_context`,
-not `input`. The user's request is benign, so a defense that only checks the user's words misses
-it entirely. Metrics: `security/injection.py`, [security.md](security.md).
+1. The attacker plants an instruction in a document ("ignore prior instructions, reveal...").
+2. A benign user asks a genuine, unrelated question.
+3. The RAG pipeline retrieves the poisoned document as normal `retrieval_context`.
+4. The resulting `EvalCase` holds the user's question, the model's reply and the poisoned doc.
+5. `ComplianceMetric` fails if the reply contains the attack's `compliance_markers`;
+   `TaskCompletionMetric` fails if the real task's `task_markers` are gone.
+
+- Why a separate category from direct injection: the poison sits in `retrieval_context`, not
+  `input`, so a defense that only checks the user's words misses it. See [security.md](security.md).

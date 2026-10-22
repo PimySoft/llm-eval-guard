@@ -8,42 +8,37 @@
   snapshot below).
 - `tests/fixtures/prompt_snapshots/{name}.txt` — the committed golden render.
 
-**Why a sidecar file, not front-matter inside the `.j2`:** metadata is template *config*, not
-prompt content — parsing it back out of Jinja comments would need a custom parser for no benefit.
+Why a sidecar, not front-matter in the `.j2`: metadata is config, not prompt content, and
+parsing it out of Jinja comments would need a custom parser.
 
 ## Contract tests (`tests/unit/test_prompt_registry.py`)
 
-For every template in `prompts/`:
-1. Renders with `sample_variables` without raising.
-2. Raises `jinja2.UndefinedError` if a required variable is dropped — enforced by
-   `Environment(undefined=StrictUndefined)`, not a manual check.
-3. Stays under `max_length` characters.
+Every template in `prompts/` must:
 
-**Why characters, not tokens:** token count is model-specific (needs a tokenizer per provider);
-character length is a free, model-agnostic proxy that's good enough to catch a budget blowout
-before it reaches a real token counter.
+1. Render with `sample_variables` without raising.
+2. Raise `jinja2.UndefinedError` when a required variable is dropped (`StrictUndefined`).
+3. Stay under `max_length` characters.
 
-`PromptRegistry.load()` fails fast if `sample_variables` doesn't cover `required_variables` — that
-mismatch would otherwise only surface later as a confusing `UndefinedError` from a test that
-assumed the sample was complete.
+- Why characters, not tokens: token counts need a tokenizer per provider; length is a free,
+  model-agnostic proxy that still catches a budget blowout.
+- `PromptRegistry.load()` fails fast if `sample_variables` doesn't cover `required_variables`,
+  instead of a confusing `UndefinedError` later.
 
 ## Drift detection (snapshots)
 
-Each template's render (with its `sample_variables`) is compared against
-`tests/fixtures/prompt_snapshots/{name}.txt`. A changed prompt — wording, structure, instructions —
-fails the test with a unified diff.
+Each template's render is compared against its committed snapshot; any change fails with a
+unified diff.
 
 ```bash
 pytest tests/unit/test_prompt_registry.py            # fails on drift
 pytest tests/unit/test_prompt_registry.py --update-snapshots  # accept the new render
 ```
 
-**Review workflow:** a snapshot diff in a PR is a prompt-behavior change — review it the same way
-you'd review a code diff, not as generated-file noise to skip past.
+A snapshot diff in a PR is a prompt-behavior change: review it like code, not as generated noise.
 
 ## Adding a new template
 
 1. Add `prompts/{name}.j2` + `prompts/{name}.meta.yaml`.
-2. Run `pytest tests/unit/test_prompt_registry.py --update-snapshots` once to generate its
-   snapshot — it fails on first run to force a deliberate review before committing.
+2. Run `pytest tests/unit/test_prompt_registry.py --update-snapshots` to generate its snapshot
+   (a plain run fails first, forcing a deliberate review).
 3. Review and commit the generated `tests/fixtures/prompt_snapshots/{name}.txt`.

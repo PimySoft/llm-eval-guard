@@ -30,7 +30,7 @@ def test_render_markdown_all_pass_shows_pass_badge() -> None:
     assert "## Failing cases" not in out
 
 
-def test_render_markdown_failure_appears_in_failing_cases_table() -> None:
+def test_render_markdown_failure_appears_in_failing_cases_list() -> None:
     suite = SuiteRunResult(
         suite_name="quality", case_results=[_case_result(passed=False, score=0.2)]
     )
@@ -77,7 +77,7 @@ def test_render_markdown_sorts_security_findings_by_severity() -> None:
 
     out = render_markdown([suite])
     critical_pos = out.index("critical")
-    low_pos = out.index("| low |")
+    low_pos = out.index("**low**")
 
     assert critical_pos < low_pos
 
@@ -121,3 +121,21 @@ def test_render_markdown_treats_red_team_cases_in_any_suite_as_security_findings
 
     assert "## Security findings" in out
     assert "## Failing cases" not in out
+
+
+def test_render_markdown_uses_bullet_lists_not_tables() -> None:
+    suite = SuiteRunResult(
+        suite_name="quality",
+        case_results=[
+            _case_result(),
+            _case_result(passed=False, score=0.2),
+            _case_result(metric="compliance", passed=False, severity="high", attack_category="dpi"),
+        ],
+    )
+
+    out = render_markdown([suite])
+
+    assert "|" not in out
+    assert "- **quality / faithfulness** — 1/2 passed (50%), avg score 0.55" in out
+    assert "- **quality / faithfulness** — score 0.20 — “what is the storage limit?”" in out
+    assert "  - Reason: because" in out

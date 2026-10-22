@@ -1,21 +1,22 @@
 # Judge Calibration
 
-An LLM judge is itself an unverified component until it's checked against ground truth. Wiring
-`FaithfulnessMetric` up to Ollama proves the *plumbing* works — it proves nothing about whether
-the scores it returns are trustworthy. This is what `scripts/calibrate_judge.py` measures, and
-what it found.
+An LLM judge is unverified until it's checked against ground truth. `scripts/calibrate_judge.py`
+measures that against the hand-labeled golden dataset.
+
+## In short
+
+- Default judge `qwen2.5:7b`, held-out agreement with human labels: relevancy **82%**,
+  faithfulness **71%** (below the 80% bar, so gated at a lowered 70%).
+- CI runs an uncalibrated `qwen2.5:0.5b` as a plumbing check only.
+- The labeler's own self-agreement, which caps any judge, is still unmeasured.
 
 ## How it works
 
-`scripts/calibrate_judge.py` scores the cases in
-[`datasets/golden/sample_rag_qa.jsonl`](../datasets/golden/sample_rag_qa.jsonl) with the judge and
-compares against the hand-assigned `human_faithfulness`/`human_relevancy` labels (see
-[datasets.md](datasets.md)). It reports:
+The script scores [`sample_rag_qa.jsonl`](../datasets/golden/sample_rag_qa.jsonl) with the judge
+and compares against `human_faithfulness`/`human_relevancy` ([datasets.md](datasets.md)):
 
-- **Pass/fail agreement** — does the judge's pass/fail call match the human label's (human label
-  passes at ≥ 0.5)? Plus a bootstrap 95% confidence interval.
-- **Mean absolute error** — average `|human_score - judge_score|`
-- **Pearson r** — do the judge's scores move with the human scores at all?
+- **Pass/fail agreement** (human label passes at ≥ 0.5), with a bootstrap 95% CI
+- **Mean absolute error** and **Pearson r**
 - **Per-`failure_mode` agreement** and **seconds per case**
 
 ```bash
@@ -26,13 +27,11 @@ python scripts/calibrate_judge.py --split dev --json > result.json   # includes 
 ```
 
 - Exits 1 if either metric's agreement is below `--min-agreement` (default 0.8).
-- Split discipline: compare models and tune cutoffs on `dev` only; run `test` once, for the final
-  choice. **Why:** reporting agreement on the data it was tuned on would overstate it.
+- Tune on `dev` only; run `test` once, for the final choice. Why: agreement on tuning data is
+  overstated.
 - `DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE=300` avoids spurious timeouts on slower models.
-
-**Why not just eyeball the example test suite's pass rate:** `tests/integration/test_faithfulness.py`
-only samples cases already labeled "should pass". A judge that rubber-stamps everything would
-still look fine there; calibration is where the known-bad cases get checked.
+- Why not just use the integration tests' pass rate: they only sample should-pass cases, so a
+  rubber-stamping judge would look fine there.
 
 ## Model comparison (`dev`, n=39, Apple M3 GPU)
 
@@ -96,10 +95,9 @@ lowered, explicit bar instead of being quietly trusted:
 
 ## Judge roles
 
-- **`recommended` — `qwen2.5:7b`** (default `judge` in `leg.config.yaml`): the numbers above;
-  use for local/self-hosted gating.
-- **`ci` — `qwen2.5:0.5b`** (`judge_profiles.ci`, `leg run --judge ci`): fast, **uncalibrated**
-  smoke check for free CPU runners; judge-scored tests are strict `xfail`s under it.
+- **`qwen2.5:7b`** (default `judge`) — the numbers above; use for local/self-hosted gating.
+- **`qwen2.5:0.5b`** (`judge_profiles.ci`, `leg run --judge ci`) — fast and **uncalibrated**;
+  judge-scored tests are strict `xfail`s under it. How CI uses it: [ci-setup.md](ci-setup.md#the-judge-in-ci).
 
 ## `qwen2.5:0.5b` failure modes (observed)
 

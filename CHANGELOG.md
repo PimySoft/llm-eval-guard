@@ -4,7 +4,7 @@ All notable changes to this project are documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project uses
 [Semantic Versioning](https://semver.org/).
 
-## [0.1.0] — Unreleased
+## [0.1.0] — 2026-10-22
 
 ### Added
 
@@ -87,6 +87,17 @@ All notable changes to this project are documented in this file. Format follows
   a glob and the install fails.
 - `docs/ci-setup.md` release setup now uses a PyPI *pending* trusted publisher; it described
   registering the project first, which PyPI doesn't allow before a first upload.
+
+### Changed
+
+- `report.md` sections (per-metric summary, security findings, failing cases) are bullet lists
+  instead of Markdown tables, so the report reads top to bottom in the job summary and raw file.
+- Documentation condensed: each fact lives in one doc and the others link to
+  it; README's DeepEval comparison and skills list merged into one "Why" list;
+  `docs/architecture.md` prose replaced by numbered step lists, keeping the data-flow and
+  indirect-injection diagrams Phase 6.2 requires; `docs/security.md`'s demo-bot
+  findings and marker limits no longer repeat each other; `docs/judge-calibration.md` opens
+  with a three-line summary.
 
 ### Known limitations
 
