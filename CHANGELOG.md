@@ -85,6 +85,8 @@ All notable changes to this project are documented in this file. Format follows
 - `leg --help` no longer prints an internal developer note as the CLI description.
 - README quickstart quotes `"llm-eval-guard[deepeval]"` — unquoted, zsh treats the brackets as
   a glob and the install fails.
+- `docs/ci-setup.md` release setup now uses a PyPI *pending* trusted publisher; it described
+  registering the project first, which PyPI doesn't allow before a first upload.
 
 ### Known limitations
 

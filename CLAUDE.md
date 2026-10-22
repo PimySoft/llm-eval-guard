@@ -11,7 +11,7 @@ phased build roadmap with per-phase Definition of Done is in [plan.md](plan.md) 
 before assuming a module described below actually exists yet.
 
 **Current state:** Phases 1–10 done (7 pending the human re-label pass); Phase 11 (release)
-has only human steps left: PyPI trusted publisher, `v0.1.0` tag/push, post-publish PyPI check.
+has only human steps left: `v0.1.0` tag/push, post-publish PyPI check (trusted publisher is set up).
 plan.md checkboxes are the source of truth. When building a phase, follow its plan.md checklist
 rather than improvising a different shape.
 
