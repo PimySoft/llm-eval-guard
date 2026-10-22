@@ -19,10 +19,10 @@ Each metric's pass/fail line is set per suite in `leg.config.yaml`
   not a quality percentage. Both were tuned on `dev` ([judge-calibration.md](judge-calibration.md)).
 - **`context_recall` — 1.0** (`demo`): a missing fact means the answer can't be grounded.
 - **Schema validators — 1.0** (implicit): a malformed field breaks the consumer or it doesn't.
-- **`compliance`, `task_completion`, `pii_leakage` — 1.0** (`security`, `demo_security`): one successful attack
-  is a regression, not a rate.
-- **`toxicity` — 0.5** (`security`, `demo_security`): 1 = clean (DeepEval ≥4.2.5). Not calibrated against human
-  labels yet; `tests/integration/test_toxicity.py` sanity-checks it on fixtures.
+- **`compliance`, `task_completion`, `pii_leakage` — 1.0** (`security`, `demo_security`): one
+  successful attack is a regression, not a rate.
+- **`toxicity` — 0.5** (`security`, `demo_security`): 1 = clean (DeepEval ≥4.2.5). Not calibrated
+  against human labels yet; `tests/integration/test_toxicity.py` sanity-checks it on fixtures.
 
 ## Tuning guidance
 

@@ -31,12 +31,10 @@ One JSON object per line. Loaded via `llm_eval_guard.core.load_golden_dataset`.
   [judge-calibration.md](judge-calibration.md)
 - `note` (`str`) — why this label, in one line
 
-**Why:** faithfulness and relevancy are labeled and scored *separately* because they catch
-different failures — an answer can be grounded but off-topic, or on-topic but hallucinated.
-Collapsing them into one score would hide which failure mode regressed.
-
-**Why a `dev`/`test` split:** Phase 8 picks a judge model on `dev`; reporting agreement on the
-same data would overstate it. `test` is scored once, for the headline number.
+- Why two labels: an answer can be grounded but off-topic, or on-topic but hallucinated; one
+  score would hide which regressed.
+- Why a `dev`/`test` split: the judge is picked on `dev`; `test` is scored once, for the
+  headline number.
 
 ### Labeling rules
 
@@ -79,7 +77,6 @@ See [`datasets/redteam/README.md`](../datasets/redteam/README.md).
 
 ## Why shipped datasets stay all-passing
 
-`sample_tool_calls.jsonl` and `datasets/redteam/` are the repo's own dogfood gate, and a real gate
-should stay green. Failure detection is proven in unit tests instead, which build malformed or
-vulnerable variants in-process (`test_schema_validation.py`, `test_cli.py`, `test_injection.py`,
-`test_pii.py`).
+They're the repo's own dogfood gate, and a real gate stays green. Failure detection is proven in
+unit tests that build malformed or vulnerable variants in-process (`test_schema_validation.py`,
+`test_cli.py`, `test_injection.py`, `test_pii.py`).

@@ -92,8 +92,11 @@ All notable changes to this project are documented in this file. Format follows
 
 - `report.md` sections (per-metric summary, security findings, failing cases) are bullet lists
   instead of Markdown tables, so the report reads top to bottom in the job summary and raw file.
-- Documentation condensed: README ~180 → ~120 lines, with the DeepEval comparison and skills
-  list merged into one "Why" list and usage examples folded into links.
+- Documentation condensed: each fact lives in one doc and the others link to
+  it; README's DeepEval comparison and skills list merged into one "Why" list;
+  `docs/architecture.md` diagrams replaced by numbered step lists; `docs/security.md`'s demo-bot
+  findings and marker limits no longer repeat each other; `docs/judge-calibration.md` opens
+  with a three-line summary.
 
 ### Known limitations
 
