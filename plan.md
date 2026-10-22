@@ -440,6 +440,7 @@ Goal: know how consistent the ground truth is, which caps how good any judge can
 - [x] Add `docs/labeling-guide.md`: the scoring rubric for `human_faithfulness`/`human_relevancy` with one worked example per `failure_mode`
   - Why: a second labeler can't agree with rules that only exist in one person's head
   - Done: worked examples use an invented bike-share product, not dataset cases, so the guide doesn't leak labels to the second labeler
+  - Per-case checklist added after self-agreement: 3 of 5 differing cases broke rules the guide already stated, 2 were false claims missed next to true ones
 - [x] Extend `core/relabel.py` + `scripts/relabel_sample.py` with a `--labeler` field, plus Cohen's kappa and percent agreement between any two label sets; unit-test kappa against a hand-computed example
   - Done: `relabel_sample.py sample|score --labeler`, `compare A B`; `cohen_kappa` lives in `core/calibration.py`, so `calibrate_judge.py` reports the judge's kappa too; samples round up, so 20% is 12 cases, not 11
 - [ ] Human step: a second person labels a random ≥20% sample using only the guide; report inter-rater kappa in `docs/datasets.md`; list disagreements and fix the guide (not the `test` labels)

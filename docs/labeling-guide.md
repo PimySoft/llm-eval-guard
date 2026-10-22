@@ -8,6 +8,25 @@ nothing but this page and the blind file from `scripts/relabel_sample.py sample`
 - The worked examples below use an invented product, not dataset cases. Why: a guide quoting real cases would
   hand the labeler some of the answers and inflate agreement.
 
+## Per-case checklist
+
+Run through this for every case; the sections below explain each rule.
+
+1. Read the question, then the context, then the answer.
+2. Split the answer into claims. For each claim, find the sentence in the context that states it.
+3. Look hardest at the claims that are easiest to miss next to correct ones:
+   - a feature or limit assigned to the wrong plan ("on every plan" when the context names one)
+   - comparatives and superlatives ("cheapest", "fastest", "best on the market")
+   - numbers, durations and dropped qualifiers ("during business hours", "members only")
+4. Faithfulness:
+   - any claim with no supporting sentence, or a contradicting one: `0.0`, however good the rest
+   - every claim stated: `1.0`; one stretched, or chunks disagree and the answer follows one: `0.5`
+   - no product claims at all (refusal, "the docs don't say"): `1.0`, even if the refusal was
+     wrong; that's relevancy's job
+5. Relevancy, `0` or `1`: did it answer the question asked? Declining when the context has the
+   answer is `0`; answering a different question is `0`, even if every word is true.
+6. Score the two labels separately. A bad answer on one doesn't lower the other.
+
 ## Before you start
 
 - Label from the blind file only. Don't open the dataset, git history, notes or judge output.

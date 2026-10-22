@@ -18,6 +18,8 @@ All notable changes to this project are documented in this file. Format follows
 - Labeler self-agreement measured on a blind 12-case re-label: kappa 0.25 faithfulness, 0.00
   relevancy ([docs/datasets.md](docs/datasets.md#label-agreement)); the filled-in
   `sample_rag_qa.relabel.jsonl` is committed as evidence.
+- The labeling guide opens with a per-case checklist (claim-by-claim check, wrong-plan and
+  comparative claims, refusals are faithful, relevancy is 0 or 1), from the self-agreement misses.
 
 ### Fixed
 
