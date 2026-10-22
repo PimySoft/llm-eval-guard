@@ -92,6 +92,8 @@ All notable changes to this project are documented in this file. Format follows
 
 - `report.md` sections (per-metric summary, security findings, failing cases) are bullet lists
   instead of Markdown tables, so the report reads top to bottom in the job summary and raw file.
+- Documentation condensed: README ~180 → ~120 lines, with the DeepEval comparison and skills
+  list merged into one "Why" list and usage examples folded into links.
 
 ### Known limitations
 

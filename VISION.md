@@ -41,7 +41,7 @@ faithfulness regressions, broken output contracts, and prompt-injection exposure
 
 ## Skills demonstrated
 
-All six target skills shipped — see [README.md](README.md#skills-demonstrated).
+All target skills shipped — see [README.md](README.md#why).
 
 ## Cost policy
 
