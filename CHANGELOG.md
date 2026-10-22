@@ -6,6 +6,12 @@ All notable changes to this project are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 13:** `scripts/relabel_sample.py` takes `--labeler` and a `compare A B` command, and
+  reports Cohen's kappa and the differing case ids alongside agreement; `calibrate_judge.py`
+  reports the judge's kappa too. Blind samples now round up (20% of 56 is 12 cases, not 11).
+
 ### Fixed
 
 - README links and the regression screenshot are absolute GitHub URLs, so they work on the

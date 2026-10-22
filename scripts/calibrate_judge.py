@@ -35,6 +35,7 @@ def _summary(calibration: MetricCalibration, judge_threshold: float) -> dict[str
         "judge_threshold": judge_threshold,
         "agreement": calibration.pass_fail_agreement,
         "agreement_ci95": list(ci) if ci else None,
+        "kappa": calibration.pass_fail_kappa,
         "mae": calibration.mean_absolute_error,
         "pearson_r": calibration.pearson_r,
         "seconds_per_case": calibration.mean_seconds,
@@ -61,9 +62,12 @@ def _print_report(calibration: MetricCalibration) -> None:
     r_str = "n/a" if r is None else f"{r:.2f}"
     ci = calibration.agreement_ci()
     ci_str = "n/a" if ci is None else f"[{ci[0]:.0%}, {ci[1]:.0%}]"
+    kappa = calibration.pass_fail_kappa
+    kappa_str = "n/a" if kappa is None else f"{kappa:.2f}"
     print(
         f"{calibration.metric_name}: "
         f"agreement={calibration.pass_fail_agreement:.0%} (95% CI {ci_str})  "
+        f"kappa={kappa_str}  "
         f"MAE={calibration.mean_absolute_error:.2f}  "
         f"pearson_r={r_str}  "
         f"s/case={calibration.mean_seconds:.1f}  "

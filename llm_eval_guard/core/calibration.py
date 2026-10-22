@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import random
 import time
+from collections.abc import Hashable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -76,6 +77,10 @@ class MetricCalibration:
         )
 
     @property
+    def pass_fail_kappa(self) -> float | None:
+        return cohen_kappa([c.human_pass for c in self.cases], [c.judge_pass for c in self.cases])
+
+    @property
     def mismatches(self) -> list[CaseComparison]:
         return [c for c in self.cases if not c.agrees]
 
@@ -130,6 +135,25 @@ def _pearson(xs: list[float], ys: list[float]) -> float | None:
     if var_x == 0 or var_y == 0:
         return None
     return float(cov / (var_x**0.5 * var_y**0.5))
+
+
+def cohen_kappa(a: Sequence[Hashable], b: Sequence[Hashable]) -> float | None:
+    """Cohen's kappa between two raters' labels for the same items: (p_o - p_e) / (1 - p_e).
+
+    Why not raw agreement: on a 50/50 pass/fail set, two raters guessing at random already agree
+    half the time; kappa scores that as 0. ``None`` when undefined (no items, or both raters used
+    one identical label throughout, so p_e = 1).
+    """
+    if len(a) != len(b):
+        raise ValueError(f"rater label counts differ: {len(a)} vs {len(b)}")
+    n = len(a)
+    if n == 0:
+        return None
+    observed = sum(x == y for x, y in zip(a, b, strict=True)) / n
+    expected = sum((a.count(label) / n) * (b.count(label) / n) for label in set(a) | set(b))
+    if expected == 1:
+        return None
+    return (observed - expected) / (1 - expected)
 
 
 def calibrate(
