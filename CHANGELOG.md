@@ -15,6 +15,9 @@ All notable changes to this project are documented in this file. Format follows
   worked example per failure mode, written so a second labeler can work from it alone.
 - `docs/judge-calibration.md` reports judge kappa (`test`: faithfulness 0.43, relevancy 0.48) and
   a human-ceiling section that the human label-agreement numbers fill in.
+- Labeler self-agreement measured on a blind 12-case re-label: kappa 0.25 faithfulness, 0.00
+  relevancy ([docs/datasets.md](docs/datasets.md#label-agreement)); the filled-in
+  `sample_rag_qa.relabel.jsonl` is committed as evidence.
 
 ### Fixed
 

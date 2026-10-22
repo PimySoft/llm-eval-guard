@@ -9,7 +9,8 @@ measures that against the hand-labeled golden dataset.
   faithfulness **71%** (below the 80% bar, so gated at a lowered 70%).
 - CI runs an uncalibrated `qwen2.5:0.5b` as a plumbing check only.
 - Judge kappa (`test`): faithfulness **0.43**, relevancy **0.48**, i.e. moderate.
-- Human label agreement, which caps any judge, is still unmeasured ([below](#human-ceiling)).
+- Human self-agreement kappa is lower still (0.25 / 0.00, n=12), so the labels, not the judge,
+  are now the weak link ([below](#human-ceiling)).
 
 ## How it works
 
@@ -93,7 +94,7 @@ lowered, explicit bar instead of being quietly trusted:
 - Why 70% is defensible: `dev` 82%, `test` 71%, and the `test` interval (47–88%) includes 80%.
 - Why it still catches regressions: gates use a suite pass *rate*, so per-case judge errors
   average out; a grounding regression shifts the whole rate, not one case.
-- Human label agreement is still pending ([Human ceiling](#human-ceiling)); it caps any judge.
+- Human self-agreement kappa is 0.25 / 0.00, below the judge's ([Human ceiling](#human-ceiling)).
 - Re-calibrate on a fresh, larger held-out set before raising this bar — not on this `test` split.
 
 ## Human ceiling
@@ -108,7 +109,7 @@ A judge can't be expected to agree with the labels more than humans agree with e
   rejections.
 - Human kappa to compare against, pass/fail, from `scripts/relabel_sample.py`
   ([datasets.md](datasets.md#label-agreement)):
-  - Self-agreement: **pending** the human re-label pass
+  - Self-agreement: faithfulness **0.25**, relevancy **0.00** (n=12), below the judge
   - Inter-rater: **pending** a second labeler
 - How to read it once filled: judge kappa near human kappa means the judge is at the ceiling, so
   better labels come before more judge tuning. Judge kappa well below means there is headroom.

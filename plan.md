@@ -308,11 +308,11 @@ Goal: a labeled set big and balanced enough that a calibration number means some
 - [x] Grow `datasets/golden/sample_rag_qa.jsonl` to ≥50 cases, roughly half that a correct judge should fail (hallucinated detail, unsupported claim, off-topic answer, partially grounded answer)
 - [x] Tag every case with a `failure_mode` category (or `none`) so calibration can report per-category agreement, not just a single average
 - [x] Split into `dev` and `test` (e.g., 70/30 via a `split` metadata field) — Why: Phase 8 picks a judge model on `dev`; reporting agreement on that same data would overstate it
-- [ ] Re-label a random 20% of cases a few days later without looking at the first labels; report your own self-agreement in `docs/datasets.md` — Why: the human labels are the ground truth, so their consistency caps how good any judge can look
+- [x] Re-label a random 20% of cases a few days later without looking at the first labels; report your own self-agreement in `docs/datasets.md` — Why: the human labels are the ground truth, so their consistency caps how good any judge can look
   - Tooling done (`scripts/relabel_sample.py sample|score`, `llm_eval_guard/core/relabel.py`); the re-label pass itself is a human step, still pending
 - [x] Extend `tests/unit/test_dataset.py` to enforce the new fields and the pass/fail balance
 
-**Definition of Done:** ≥50 labeled cases with failure-mode tags and a dev/test split; self-agreement number documented; dataset unit tests enforce the schema. **Partially met** — 56 cases (28/28 pass/fail, 39 dev / 17 test) with failure-mode tags, enforced by `tests/unit/test_dataset.py`; the 41 new labels were drafted by Claude and reviewed/accepted by the maintainer; the self-agreement number is pending the human re-label pass.
+**Definition of Done:** ≥50 labeled cases with failure-mode tags and a dev/test split; self-agreement number documented; dataset unit tests enforce the schema. **Met** — 56 cases (28/28 pass/fail, 39 dev / 17 test) with failure-mode tags, enforced by `tests/unit/test_dataset.py`; the 41 new labels were drafted by Claude and reviewed/accepted by the maintainer; self-agreement measured in Phase 13 (kappa 0.25 faithfulness / 0.00 relevancy, n=12, `docs/datasets.md`).
 
 ---
 
@@ -435,7 +435,8 @@ Goal: be able to explain and defend every design decision in Phases 1–11 witho
 
 Goal: know how consistent the ground truth is, which caps how good any judge can look.
 
-- [ ] Human step: do the pending Phase 7 self-agreement re-label (`scripts/relabel_sample.py sample|score`); record the number in `docs/datasets.md`
+- [x] Human step: do the pending Phase 7 self-agreement re-label (`scripts/relabel_sample.py sample|score`); record the number in `docs/datasets.md`
+  - Done 2026-10-22: kappa 0.25 faithfulness / 0.00 relevancy (n=12); 5 differing cases, 3 against rules the guide already states
 - [x] Add `docs/labeling-guide.md`: the scoring rubric for `human_faithfulness`/`human_relevancy` with one worked example per `failure_mode`
   - Why: a second labeler can't agree with rules that only exist in one person's head
   - Done: worked examples use an invented bike-share product, not dataset cases, so the guide doesn't leak labels to the second labeler
@@ -446,7 +447,7 @@ Goal: know how consistent the ground truth is, which caps how good any judge can
   - Judge side done: kappa reported (`test` faithfulness 0.43, relevancy 0.48); the human numbers fill in after the two human label passes
 - [ ] `study/08-inter-rater-agreement.md`: why kappa rather than raw agreement, how to read 0.4 vs 0.8, and what to do when humans disagree
 
-**Definition of Done:** self-agreement and inter-rater kappa are both documented; the labeling guide exists; kappa tooling is unit-tested. **In progress** — kappa tooling done and unit-tested; labeling guide written; judge kappa and the human-ceiling section are in `docs/judge-calibration.md`, waiting on both human label passes for the human numbers.
+**Definition of Done:** self-agreement and inter-rater kappa are both documented; the labeling guide exists; kappa tooling is unit-tested. **In progress** — kappa tooling done and unit-tested; labeling guide written; self-agreement measured (kappa 0.25 / 0.00) and in the human-ceiling section; the second-labeler pass is open.
 
 ---
 

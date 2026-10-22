@@ -70,7 +70,20 @@ Self-agreement (the original labeler, again):
 
 - `python scripts/relabel_sample.py sample` writes `sample_rag_qa.relabel.jsonl`; a few days
   later, fill in both labels without opening the dataset, then `... score`
-- Result: **not yet measured**
+- Result (2026-10-22, n=12, filled-in file committed as evidence):
+  - Faithfulness: pass/fail **75%**, kappa **0.25**, exact 58%, MAE 0.33
+  - Relevancy: pass/fail **83%**, kappa **0.00**, exact 83%, MAE 0.12. Both should-fail cases
+    were passed, so kappa hits 0
+- 9 of the 12 sampled labels were AI-drafted then reviewed (Phase 7), so this is agreement with
+  reviewed labels, not purely with an earlier self
+- The 5 differing cases:
+  - Missed false claims next to true ones: `rag-008` (BYOK on every plan), `rag-027` ("cheapest
+    on the market")
+  - Against rules the guide states: `rag-036` (refusal scored unfaithful), `rag-033` (off-topic
+    scored 0.5 relevancy), `rag-054` (conflicting chunks scored 1.0)
+- No labels changed: `rag-033` is `test`; `dev` fixes wait for the second labeler
+- Reading: the labels are a weak ceiling. A judge kappa above this (0.43–0.63) says more about
+  label noise than judge skill
 
 Inter-rater agreement (a second labeler, guide only):
 
