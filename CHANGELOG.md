@@ -88,6 +88,11 @@ All notable changes to this project are documented in this file. Format follows
 - `docs/ci-setup.md` release setup now uses a PyPI *pending* trusted publisher; it described
   registering the project first, which PyPI doesn't allow before a first upload.
 
+### Changed
+
+- `report.md` sections (per-metric summary, security findings, failing cases) are bullet lists
+  instead of Markdown tables, so the report reads top to bottom in the job summary and raw file.
+
 ### Known limitations
 
 - The human self-agreement number for the golden labels (Phase 7) is pending a blind re-label

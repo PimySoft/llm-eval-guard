@@ -1,7 +1,10 @@
 """Renders `leg run` results as a Markdown summary — the human-facing report wired into
 `$GITHUB_STEP_SUMMARY` (see .github/workflows/ci.yml and docs/ci-setup.md).
 
-Why security findings get their own section instead of sharing the "failing cases" table: a
+Every section is a bullet list, not a Markdown table. Why: it reads top to bottom in the job
+summary and in a raw `report.md` alike.
+
+Why security findings get their own section instead of sharing the "failing cases" list: a
 red-team case failure is a different kind of finding (an attack got through) than a quality
 metric dipping under threshold — the CLI's console output already makes that distinction (see
 `_render_results` in cli.py); the report mirrors it.
@@ -43,8 +46,6 @@ def render_markdown(suite_results: list[SuiteRunResult]) -> str:
 
     lines.append("## Per-metric summary")
     lines.append("")
-    lines.append("| Suite | Metric | Cases | Passed | Pass rate | Avg score |")
-    lines.append("|---|---|---|---|---|---|")
     for suite_result in suite_results:
         by_metric: dict[str, list[CaseResult]] = {}
         for cr in suite_result.case_results:
@@ -54,8 +55,8 @@ def render_markdown(suite_results: list[SuiteRunResult]) -> str:
             n_passed = sum(1 for cr in case_results if cr.result.passed)
             avg_score = sum(cr.result.score for cr in case_results) / n
             lines.append(
-                f"| {suite_result.suite_name} | {metric_name} | {n} | {n_passed} "
-                f"| {n_passed / n:.0%} | {avg_score:.2f} |"
+                f"- **{suite_result.suite_name} / {metric_name}** — {n_passed}/{n} passed "
+                f"({n_passed / n:.0%}), avg score {avg_score:.2f}"
             )
     lines.append("")
 
@@ -66,15 +67,14 @@ def render_markdown(suite_results: list[SuiteRunResult]) -> str:
     if security_failures:
         lines.append("## Security findings")
         lines.append("")
-        lines.append("| Severity | Category | Metric | Case | Reason |")
-        lines.append("|---|---|---|---|---|")
         for cr in security_failures:
             severity = cr.metadata.get("severity", "unknown")
             category = cr.metadata.get("attack_category", "unknown")
             lines.append(
-                f"| {severity} | {category} | {cr.result.metric_name} "
-                f"| {_truncate(cr.case_input, 50)} | {_truncate(cr.result.reason or '', 80)} |"
+                f"- **{severity}** · {category} · {cr.result.metric_name} — "
+                f"“{_truncate(cr.case_input, 50)}”"
             )
+            lines.append(f"  - Reason: {_truncate(cr.result.reason or '', 80)}")
         lines.append("")
 
     other_failures = [
@@ -85,13 +85,12 @@ def render_markdown(suite_results: list[SuiteRunResult]) -> str:
     if other_failures:
         lines.append("## Failing cases")
         lines.append("")
-        lines.append("| Suite | Metric | Case | Score | Reason |")
-        lines.append("|---|---|---|---|---|")
         for suite_name, cr in other_failures[:MAX_FAILING_CASES]:
             lines.append(
-                f"| {suite_name} | {cr.result.metric_name} | {_truncate(cr.case_input, 50)} "
-                f"| {cr.result.score:.2f} | {_truncate(cr.result.reason or '', 80)} |"
+                f"- **{suite_name} / {cr.result.metric_name}** — score {cr.result.score:.2f} — "
+                f"“{_truncate(cr.case_input, 50)}”"
             )
+            lines.append(f"  - Reason: {_truncate(cr.result.reason or '', 80)}")
         remaining = len(other_failures) - MAX_FAILING_CASES
         if remaining > 0:
             lines.append("")

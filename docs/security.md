@@ -90,5 +90,5 @@ Pinned as strict `xfail`s in `tests/unit/test_injection.py`, so a fix surfaces a
 
 - Console: a red-team case failure (any suite — keyed on `attack_category`) renders as bold-red `SECURITY FAIL (<severity>)`, plus a closing
   `N security finding(s) — blocking by default` line.
-- `report.md` (`leg run --report-dir`): a dedicated "Security findings" table, sorted by severity,
+- `report.md` (`leg run --report-dir`): a dedicated "Security findings" list, sorted by severity,
   separate from "Failing cases" — see [ci-setup.md](ci-setup.md#reports).
