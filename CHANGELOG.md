@@ -11,6 +11,8 @@ All notable changes to this project are documented in this file. Format follows
 - **Phase 13:** `scripts/relabel_sample.py` takes `--labeler` and a `compare A B` command, and
   reports Cohen's kappa and the differing case ids alongside agreement; `calibrate_judge.py`
   reports the judge's kappa too. Blind samples now round up (20% of 56 is 12 cases, not 11).
+- [docs/labeling-guide.md](docs/labeling-guide.md): the faithfulness/relevancy rubric with one
+  worked example per failure mode, written so a second labeler can work from it alone.
 
 ### Fixed
 

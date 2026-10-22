@@ -56,14 +56,30 @@ One JSON object per line. Loaded via `llm_eval_guard.core.load_golden_dataset`.
 - Several questions appear twice with a good and a bad answer (HIPAA, family plan, encryption,
   Free-plan Trash) so a judge can't pass by keying on the question
 
-### Labeler self-agreement
+### Label agreement
 
-- Ground truth is only as good as the labeler: their consistency caps how good any judge can look
-- Procedure: `python scripts/relabel_sample.py sample` writes a blind 20% sample (11 cases, no
-  labels, notes, failure modes or expected outputs) to `sample_rag_qa.relabel.jsonl`; a few days
-  later, fill in both labels without opening the dataset, then
-  `python scripts/relabel_sample.py score`
-- Result: **not yet measured** — record pass/fail agreement, exact agreement and MAE per label here
+- Ground truth is only as good as the labels: their consistency caps how good any judge can look
+- Rubric for both labels, with a worked example per failure mode:
+  [labeling-guide.md](labeling-guide.md)
+- `scripts/relabel_sample.py` reports pass/fail agreement, Cohen's kappa, exact agreement, MAE and
+  the differing ids per label. Why kappa: on a 50/50 pass/fail set, chance alone agrees 50%
+- Every labeler gets the same blind sample (fixed seed): at least 20%, i.e. 12 cases, with no
+  labels, notes, failure modes or expected outputs
+
+Self-agreement (the original labeler, again):
+
+- `python scripts/relabel_sample.py sample` writes `sample_rag_qa.relabel.jsonl`; a few days
+  later, fill in both labels without opening the dataset, then `... score`
+- Result: **not yet measured**
+
+Inter-rater agreement (a second labeler, guide only):
+
+- `... sample --labeler <name>` writes `sample_rag_qa.relabel.<name>.jsonl`; they label it using
+  only [labeling-guide.md](labeling-guide.md), then `... score --labeler <name>`
+- `... compare A.jsonl B.jsonl` compares any two filled-in files, e.g. the second labeler against
+  your own re-label
+- Review the differing ids together and fix the guide, never the `test` labels
+- Result: **not yet measured** — record kappa per label and the guide changes it led to
 
 ## `datasets/golden/sample_tool_calls.jsonl`
 

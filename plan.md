@@ -436,15 +436,16 @@ Goal: be able to explain and defend every design decision in Phases 1–11 witho
 Goal: know how consistent the ground truth is, which caps how good any judge can look.
 
 - [ ] Human step: do the pending Phase 7 self-agreement re-label (`scripts/relabel_sample.py sample|score`); record the number in `docs/datasets.md`
-- [ ] Add `docs/labeling-guide.md`: the scoring rubric for `human_faithfulness`/`human_relevancy` with one worked example per `failure_mode`
+- [x] Add `docs/labeling-guide.md`: the scoring rubric for `human_faithfulness`/`human_relevancy` with one worked example per `failure_mode`
   - Why: a second labeler can't agree with rules that only exist in one person's head
+  - Done: worked examples use an invented bike-share product, not dataset cases, so the guide doesn't leak labels to the second labeler
 - [x] Extend `core/relabel.py` + `scripts/relabel_sample.py` with a `--labeler` field, plus Cohen's kappa and percent agreement between any two label sets; unit-test kappa against a hand-computed example
   - Done: `relabel_sample.py sample|score --labeler`, `compare A B`; `cohen_kappa` lives in `core/calibration.py`, so `calibrate_judge.py` reports the judge's kappa too; samples round up, so 20% is 12 cases, not 11
 - [ ] Human step: a second person labels a random ≥20% sample using only the guide; report inter-rater kappa in `docs/datasets.md`; list disagreements and fix the guide (not the `test` labels)
 - [ ] Update `docs/judge-calibration.md`: compare judge agreement against the human ceiling
 - [ ] `study/08-inter-rater-agreement.md`: why kappa rather than raw agreement, how to read 0.4 vs 0.8, and what to do when humans disagree
 
-**Definition of Done:** self-agreement and inter-rater kappa are both documented; the labeling guide exists; kappa tooling is unit-tested. **In progress** — kappa tooling done and unit-tested; the labeling guide, both human label passes and the human-ceiling comparison are open.
+**Definition of Done:** self-agreement and inter-rater kappa are both documented; the labeling guide exists; kappa tooling is unit-tested. **In progress** — kappa tooling done and unit-tested; labeling guide written; both human label passes and the human-ceiling comparison are open.
 
 ---
 
