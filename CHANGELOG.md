@@ -13,6 +13,8 @@ All notable changes to this project are documented in this file. Format follows
   reports the judge's kappa too. Blind samples now round up (20% of 56 is 12 cases, not 11).
 - [docs/labeling-guide.md](docs/labeling-guide.md): the faithfulness/relevancy rubric with one
   worked example per failure mode, written so a second labeler can work from it alone.
+- `docs/judge-calibration.md` reports judge kappa (`test`: faithfulness 0.43, relevancy 0.48) and
+  a human-ceiling section that the human label-agreement numbers fill in.
 
 ### Fixed
 

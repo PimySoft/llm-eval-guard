@@ -8,7 +8,8 @@ measures that against the hand-labeled golden dataset.
 - Default judge `qwen2.5:7b`, held-out agreement with human labels: relevancy **82%**,
   faithfulness **71%** (below the 80% bar, so gated at a lowered 70%).
 - CI runs an uncalibrated `qwen2.5:0.5b` as a plumbing check only.
-- The labeler's own self-agreement, which caps any judge, is still unmeasured.
+- Judge kappa (`test`): faithfulness **0.43**, relevancy **0.48**, i.e. moderate.
+- Human label agreement, which caps any judge, is still unmeasured ([below](#human-ceiling)).
 
 ## How it works
 
@@ -16,6 +17,8 @@ The script scores [`sample_rag_qa.jsonl`](../datasets/golden/sample_rag_qa.jsonl
 and compares against `human_faithfulness`/`human_relevancy` ([datasets.md](datasets.md)):
 
 - **Pass/fail agreement** (human label passes at ≥ 0.5), with a bootstrap 95% CI
+- **Cohen's kappa** on pass/fail. Why: it removes chance agreement, which raw agreement
+  over-credits when one class dominates
 - **Mean absolute error** and **Pearson r**
 - **Per-`failure_mode` agreement** and **seconds per case**
 
@@ -90,8 +93,27 @@ lowered, explicit bar instead of being quietly trusted:
 - Why 70% is defensible: `dev` 82%, `test` 71%, and the `test` interval (47–88%) includes 80%.
 - Why it still catches regressions: gates use a suite pass *rate*, so per-case judge errors
   average out; a grounding regression shifts the whole rate, not one case.
-- The human self-agreement number (Phase 7 re-label) is still pending; it caps any judge.
+- Human label agreement is still pending ([Human ceiling](#human-ceiling)); it caps any judge.
 - Re-calibrate on a fresh, larger held-out set before raising this bar — not on this `test` split.
+
+## Human ceiling
+
+A judge can't be expected to agree with the labels more than humans agree with each other.
+
+- Judge kappa, same frozen config and scores as above (re-run 2026-10-22 to add kappa only):
+  - `dev`: faithfulness **0.63**, relevancy **0.55**
+  - `test`: faithfulness **0.43**, relevancy **0.48**
+- Relevancy `test` at 82% raw is below an always-pass judge (88%, only 2 of 17 cases should
+  fail), but its kappa of 0.48 shows real skill: it rejects bad answers, at the cost of 3 false
+  rejections.
+- Human kappa to compare against, pass/fail, from `scripts/relabel_sample.py`
+  ([datasets.md](datasets.md#label-agreement)):
+  - Self-agreement: **pending** the human re-label pass
+  - Inter-rater: **pending** a second labeler
+- How to read it once filled: judge kappa near human kappa means the judge is at the ceiling, so
+  better labels come before more judge tuning. Judge kappa well below means there is headroom.
+- The human sample is 12 cases with 2 relevancy fails, so one flipped case moves relevancy kappa
+  from 1.0 to about 0.6. Compare the order of magnitude, not decimals.
 
 ## Judge roles
 
