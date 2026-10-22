@@ -375,6 +375,159 @@ Goal: ship it. This replaces the outstanding Phase 6.4 tag step, so the publishe
 
 ---
 
+## Phases 12–18 — Portfolio Hardening
+
+Source: a hiring-manager review of the repo (QA role, RAG testing one skill of many). It flagged:
+
+- Most commits are AI co-authored, so the maintainer must be able to defend every decision unaided
+- The labels come from one person, and their self-agreement hasn't been measured
+- The held-out set is small (n=17)
+- Injection detection is keyword-based, so a paraphrase gets past it
+- No system the maintainer didn't build has been tested
+- There's no answer for production scale or multi-turn conversations
+- The repo shows nothing of the conventional QA stack
+
+Two kinds of work:
+
+- **Code phases** follow the normal workflow: one commit per sub-item, plan.md tick, CHANGELOG entry.
+- **Study material** lives in `study/` at the repo root, one file per topic.
+  - Why not `docs/`: `docs/` is for users of the tool; `study/` is for the maintainer learning it.
+  - Not shipped in the package.
+  - Each file ends with self-check questions, with answers in a collapsed `<details>` block.
+  - The documentation policy applies here too.
+- Every phase that adds code also adds or updates a `study/` note, so the learning keeps pace with the code.
+
+---
+
+## Phase 12 — Study Guides: Own the Existing Code
+
+Goal: be able to explain and defend every design decision in Phases 1–11 without notes or AI help.
+
+- [ ] `study/00-how-to-use.md`: reading order, how to use the self-check questions, and the rule: answer aloud first, open `<details>` second
+- [ ] `study/01-data-flow.md`: trace one `leg run` from `cli.py` to the exit code, citing file:line at each step; exercise: add a print at each step and run `leg run --fast`
+- [ ] `study/02-eval-concepts.md`: faithfulness, answer relevancy, context recall, LLM-as-judge, and why each one misses failures the others catch
+  - Use real cases from `sample_rag_qa.jsonl` as the examples
+- [ ] `study/03-statistics.md`: pass/fail agreement, MAE, Pearson r, bootstrap CI, Cohen's kappa, and why n=17 gives a 47–88% interval
+  - Exercise: recompute one CI by hand from `--json` output
+- [ ] `study/04-decision-log.md`: one entry per non-obvious decision, each with the alternatives rejected and the evidence used
+  - The 0.6/0.5 cutoffs
+  - The lowered 70% bar
+  - Deterministic checks gating CI, judge checks gating locally
+  - Rule-based injection checks
+  - Regex PII
+  - The two judge roles
+  - `context_recall` for the demo gate
+- [ ] `study/05-code-walkthroughs.md`: line-by-line reading of the four trickiest pieces, with a "predict the output" exercise for each:
+  - `security/injection.py` (refusal/quote window)
+  - `core/calibration.py` (bootstrap)
+  - `core/cache.py` (cache key)
+  - `pytest_plugin.py` (auto-skip)
+- [ ] `study/06-interview-drill.md`: 30+ likely interview questions with model answers
+  - Covers design, statistics, security and the follow-up probes in Phases 13–17
+- [ ] `study/07-ai-usage.md`: a skeleton only, with three sections: what I decided, what I rejected from the AI, what I verified by hand and how
+  - Filling it in is a human step: it must be the maintainer's own account
+
+**Definition of Done:** `study/00`–`07` exist; the maintainer has answered every self-check and drill question unaided at least once and has written `07-ai-usage.md` in their own words. **Not started.**
+
+---
+
+## Phase 13 — Labeling Rigor: Self-Agreement and a Second Labeler
+
+Goal: know how consistent the ground truth is, which caps how good any judge can look.
+
+- [ ] Human step: do the pending Phase 7 self-agreement re-label (`scripts/relabel_sample.py sample|score`); record the number in `docs/datasets.md`
+- [ ] Add `docs/labeling-guide.md`: the scoring rubric for `human_faithfulness`/`human_relevancy` with one worked example per `failure_mode`
+  - Why: a second labeler can't agree with rules that only exist in one person's head
+- [ ] Extend `core/relabel.py` + `scripts/relabel_sample.py` with a `--labeler` field, plus Cohen's kappa and percent agreement between any two label sets; unit-test kappa against a hand-computed example
+- [ ] Human step: a second person labels a random ≥20% sample using only the guide; report inter-rater kappa in `docs/datasets.md`; list disagreements and fix the guide (not the `test` labels)
+- [ ] Update `docs/judge-calibration.md`: compare judge agreement against the human ceiling
+- [ ] `study/08-inter-rater-agreement.md`: why kappa rather than raw agreement, how to read 0.4 vs 0.8, and what to do when humans disagree
+
+**Definition of Done:** self-agreement and inter-rater kappa are both documented; the labeling guide exists; kappa tooling is unit-tested. **Not started.**
+
+---
+
+## Phase 14 — A Larger, Fresh Held-Out Set
+
+Goal: a headline judge number with a confidence interval narrow enough to mean something.
+
+- [ ] `study/09-sample-size.md`: how CI width shrinks with n; pick the target n for a ±10-point interval before collecting any data
+- [ ] Add a `test2` split of ≥50 new cases to `sample_rag_qa.jsonl`, following the guide, with failure modes balanced as in Phase 7
+  - Labels hand-written by the maintainer, not AI-drafted
+  - Why: Phase 7's labels were AI-drafted then reviewed, and this split's job is to be independent evidence
+- [ ] Extend `tests/unit/test_dataset.py` for `test2` (split name allowed, balance enforced)
+- [ ] Run `scripts/calibrate_judge.py --split test2` once with the Phase 8 choice (`qwen2.5:7b`, 0.6/0.5); no tuning
+- [ ] Update `docs/judge-calibration.md` with the result; if faithfulness reaches 80%, restore the bar (`MIN_PASS_RATE`); otherwise keep 70% and say why
+
+**Definition of Done:** a ≥50-case `test2` split exists, is unit-tested, and has been run exactly once; the faithfulness bar decision is documented with the new interval. **Not started.**
+
+---
+
+## Phase 15 — Injection Detection Beyond Keywords
+
+Goal: catch paraphrased compliance without losing a deterministic CI gate.
+
+- [ ] Grow `datasets/redteam/` to ≥60 entries: a paraphrased variant of each existing attack, plus encoding tricks (base64, translated instructions, split payloads); synthetic data only
+- [ ] Canary-token checks: indirect-injection payloads ask the model to emit a random token, and `ComplianceMetric` flags it exactly
+  - Why: a token can't be paraphrased, so this stays deterministic
+- [ ] Optional `JudgeComplianceMetric` (Ollama judge: "did the output carry out the injected instruction?") behind the existing `Metric` interface; local gating only, like the other judge metrics
+- [ ] Calibrate it against hand labels on the demo app's red-team responses (the 68 verdicts from Phase 9); report agreement with a CI in `docs/security.md`
+- [ ] Turn the paraphrase-FN strict `xfail` into a passing test under the judge metric (keep it `xfail` for the marker metric)
+- [ ] `study/10-prompt-injection.md`: attack taxonomy, why marker matching fails, canary tokens, and the cost/variance trade-off of a judge
+
+**Definition of Done:** ≥60 red-team entries; canary checks gate CI deterministically; the judge-compliance metric is calibrated and documented, with its limits stated. **Not started.**
+
+---
+
+## Phase 16 — An External System Under Test
+
+Goal: show the gate finds real issues in a RAG app the maintainer didn't build.
+
+- [ ] Pick an open-source RAG app that runs locally on Ollama at $0
+  - Criteria: small, permissive license, an answer + retrieved-context API
+  - Record the choice and the rejected candidates in `docs/test-strategy.md`
+- [ ] Write a `generator:` adapter for it, out of tree or in `examples/external_rag/` with its own deps, so the package stays light
+- [ ] Write a test plan for it before running anything: a short risk list adapted from `docs/test-strategy.md`
+- [ ] Run the quality, red-team and `context_recall` suites; write `docs/external-case-study.md`: findings, false alarms, and what the gate couldn't check
+- [ ] If findings are real and reproducible, file them upstream as issues (human step: outward-facing)
+- [ ] `study/11-testing-unfamiliar-systems.md`: how to onboard a system you didn't write, from reading its code to a risk list to the first suite
+
+**Definition of Done:** a case study with concrete findings (or a documented clean result with what was checked) against a third-party RAG app, and a reusable adapter. **Not started.**
+
+---
+
+## Phase 17 — Production-Scale Design (design doc, no new code)
+
+Goal: a prepared, written answer to "how would this work on a real production system?"
+
+- [ ] `docs/production-design.md`, one section each:
+  - Large corpora: sampling cases, caching, and the cost of judge calls at 10k cases
+  - Online monitoring vs pre-merge gating: sampling production traffic, detecting drift over time
+  - Multi-turn conversations: how `EvalCase` would extend, and what metrics change
+  - Ranking metrics (MRR, nDCG) once the generator no longer sees every chunk
+  - Non-English input and bias: what labeled data would be needed
+- [ ] For each section: what you'd build first, and what you'd measure to know it works
+- [ ] `study/12-production-evals.md`: a self-check drill on the design doc
+
+**Definition of Done:** the design doc exists, and the maintainer can whiteboard each section unaided. **Not started.**
+
+---
+
+## Phase 18 — Companion QA Portfolio (separate repo)
+
+Goal: cover the conventional QA stack this repo deliberately leaves out. Planned and tracked in its own repo; listed here only so the portfolio story is complete.
+
+- [ ] Create a separate repo with its own plan.md, covering:
+  - UI E2E tests (Playwright)
+  - API and contract tests
+  - A performance smoke test
+  - An exploratory test charter with bug reports
+- [ ] Link it from this README's "Why" section once it has a passing CI run
+
+**Definition of Done:** the companion repo exists with green CI and is linked from the README. **Not started.**
+
+---
+
 ## Suggested Milestone Sequencing
 
 - **M1 — Foundation** (Phases 0–1): repo scaffolded, lint/pre-commit enforced.
@@ -386,5 +539,10 @@ Goal: ship it. This replaces the outstanding Phase 6.4 tag step, so the publishe
 - **M6 — Credibility** (Phases 7–10): calibrated judge on a meaningful dataset, a real
   regression caught in a demo app, hardened security checks.
 - **M7 — Release** (Phase 11): `v0.1.0` published to PyPI.
+- **M8 — Ownership** (Phase 12): every decision defensible without notes or AI. Do this first:
+  the later phases' study notes build on it.
+- **M9 — Rigor** (Phases 13–15): measured human ceiling, a meaningful held-out number, injection
+  checks that survive paraphrase.
+- **M10 — Reach** (Phases 16–18): an external case study, a production design, the companion repo.
 
 Treat M1–M2 as the critical path — nothing in Phases 4–6 is meaningfully testable without the `Metric`/`EvalCase` abstraction and the local runner from Phase 2–3 in place.

@@ -10,8 +10,8 @@ threshold. Problem statement, target user, and non-goals are in [VISION.md](VISI
 phased build roadmap with per-phase Definition of Done is in [plan.md](plan.md) — check plan.md
 before assuming a module described below actually exists yet.
 
-**Current state:** Phases 1–11 done; `v0.1.0` is on PyPI. Only open item: Phase 7's human
-self-agreement re-label pass.
+**Current state:** Phases 1–11 done; `v0.1.0` is on PyPI. Open: Phase 7's human
+self-agreement re-label pass, and Phases 12–18 (portfolio hardening; study guides go in `study/`).
 plan.md checkboxes are the source of truth. When building a phase, follow its plan.md checklist
 rather than improvising a different shape.
 
