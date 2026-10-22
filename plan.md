@@ -445,11 +445,12 @@ Goal: know how consistent the ground truth is, which caps how good any judge can
   - Done: `relabel_sample.py sample|score --labeler`, `compare A B`; `cohen_kappa` lives in `core/calibration.py`, so `calibrate_judge.py` reports the judge's kappa too; samples round up, so 20% is 12 cases, not 11
 - [ ] Human step: a second person labels a random ≥20% sample using only the guide; report inter-rater kappa in `docs/datasets.md`; list disagreements and fix the guide (not the `test` labels)
   - `--exclude` the self-agreement sample: the checklist was revised on those 12 cases, so re-using them would inflate kappa
-- [ ] Update `docs/judge-calibration.md`: compare judge agreement against the human ceiling
+  - Simulated 2026-10-22 (no human labeler available): a fresh Claude agent, guide and blind file only, kappa 1.00 / 1.00; optimistic because Claude drafted 10 of the 12 original labels. Left unticked: a human pass is still the real test
+- [x] Update `docs/judge-calibration.md`: compare judge agreement against the human ceiling
   - Judge side done: kappa reported (`test` faithfulness 0.43, relevancy 0.48); the human numbers fill in after the two human label passes
 - [ ] `study/08-inter-rater-agreement.md`: why kappa rather than raw agreement, how to read 0.4 vs 0.8, and what to do when humans disagree
 
-**Definition of Done:** self-agreement and inter-rater kappa are both documented; the labeling guide exists; kappa tooling is unit-tested. **In progress** — kappa tooling done and unit-tested; labeling guide written; self-agreement measured (kappa 0.25 / 0.00) and in the human-ceiling section; the second-labeler pass is open.
+**Definition of Done:** self-agreement and inter-rater kappa are both documented; the labeling guide exists; kappa tooling is unit-tested. **In progress** — kappa tooling done and unit-tested; labeling guide written; self-agreement measured (kappa 0.25 / 0.00); inter-rater only simulated with a Claude labeler (kappa 1.00, optimistic); the human second-labeler pass is open.
 
 ---
 

@@ -95,7 +95,15 @@ Inter-rater agreement (a second labeler, guide only):
   scores it against the original labels
 - `... compare A.jsonl B.jsonl` compares any two filled-in files covering the same cases
 - Review the differing ids together and fix the guide, never the `test` labels
-- Result: **not yet measured** — record kappa per label and the guide changes it led to
+- Result (2026-10-22, **simulated**): no human second labeler was available, so a fresh Claude
+  agent labeled the sample, seeing only the guide and the blind file
+  - Faithfulness and relevancy: pass/fail **100%**, kappa **1.00**, exact 100%, n=12
+  - Optimistic by construction: 10 of the 12 original labels were drafted by Claude (Phase 7),
+    and the sample holds no `0.5` borderline case, where disagreement concentrates
+  - So this measures model self-consistency, not whether a human can apply the guide. A human
+    second labeler is still the real test
+- Read with self-agreement (kappa 0.25 / 0.00): the labels match Claude's reading of the rubric
+  more closely than the maintainer's re-reading
 
 ## `datasets/golden/sample_tool_calls.jsonl`
 

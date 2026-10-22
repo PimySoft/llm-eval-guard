@@ -22,6 +22,9 @@ All notable changes to this project are documented in this file. Format follows
   comparative claims, refusals are faithful, relevancy is 0 or 1), from the self-agreement misses.
 - `relabel_sample.py sample --exclude <file>` leaves an earlier pass's cases out of a new sample,
   so the second labeler isn't scored on cases the guide was revised on.
+- Simulated inter-rater pass: a fresh Claude agent labeled a separate blind 12-case sample from
+  the guide alone, kappa 1.00 on both labels. Documented as optimistic (Claude drafted most
+  original labels); a human second labeler is still pending.
 
 ### Fixed
 

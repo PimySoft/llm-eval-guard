@@ -110,7 +110,8 @@ A judge can't be expected to agree with the labels more than humans agree with e
 - Human kappa to compare against, pass/fail, from `scripts/relabel_sample.py`
   ([datasets.md](datasets.md#label-agreement)):
   - Self-agreement: faithfulness **0.25**, relevancy **0.00** (n=12), below the judge
-  - Inter-rater: **pending** a second labeler
+  - Inter-rater: kappa 1.00 / 1.00, but **simulated** with a Claude labeler, so not a human
+    ceiling ([datasets.md](datasets.md#label-agreement))
 - How to read it once filled: judge kappa near human kappa means the judge is at the ceiling, so
   better labels come before more judge tuning. Judge kappa well below means there is headroom.
 - The human sample is 12 cases with 2 relevancy fails, so one flipped case moves relevancy kappa
