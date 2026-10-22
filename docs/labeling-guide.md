@@ -50,6 +50,12 @@ Run through this for every case; the sections below explain each rule.
 - An answer that asserts nothing about the product scores `1.0`, including "I don't know" and
   "the docs don't say". Unhelpfulness is a relevancy problem, not a faithfulness one
 - Material means a user could act on it. One correct claim does not offset one invented claim
+- Vague talk about the product is filler too, even when the context doesn't cover it: plan names
+  in passing, "limits vary by plan". A specific price, limit, duration or feature is a claim
+- Paraphrase vs stretch: if a reader of the context alone would draw the same conclusion, it's
+  stated (`1.0`). E.g. "members can ride e-bikes" from "e-bikes are members only". If the claim
+  needs one extra assumption, it's stretched (`0.5`). E.g. "day-pass rides are 30 minutes,
+  so two passes give an hour" assumes passes stack
 - The `0.5` vs `0.0` test: can you point to the sentence in the context the claim stretches?
   Yes means `0.5`. No sentence at all means `0.0`
 

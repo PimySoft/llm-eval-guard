@@ -25,6 +25,8 @@ All notable changes to this project are documented in this file. Format follows
 - Simulated inter-rater pass: a fresh Claude agent labeled a separate blind 12-case sample from
   the guide alone, kappa 1.00 on both labels. Documented as optimistic (Claude drafted most
   original labels); a human second labeler is still pending.
+- The labeling guide now says vague product talk is filler and how to tell a paraphrase (`1.0`)
+  from a stretched reading (`0.5`), the two gaps that pass reported.
 
 ### Fixed
 

@@ -446,6 +446,7 @@ Goal: know how consistent the ground truth is, which caps how good any judge can
 - [ ] Human step: a second person labels a random ≥20% sample using only the guide; report inter-rater kappa in `docs/datasets.md`; list disagreements and fix the guide (not the `test` labels)
   - `--exclude` the self-agreement sample: the checklist was revised on those 12 cases, so re-using them would inflate kappa
   - Simulated 2026-10-22 (no human labeler available): a fresh Claude agent, guide and blind file only, kappa 1.00 / 1.00; optimistic because Claude drafted 10 of the 12 original labels. Left unticked: a human pass is still the real test
+  - Guide fixed for the two gaps the simulated labeler reported: vague product talk counts as filler; paraphrase vs stretch now has a test and examples
 - [x] Update `docs/judge-calibration.md`: compare judge agreement against the human ceiling
   - Judge side done: kappa reported (`test` faithfulness 0.43, relevancy 0.48); the human numbers fill in after the two human label passes
 - [ ] `study/08-inter-rater-agreement.md`: why kappa rather than raw agreement, how to read 0.4 vs 0.8, and what to do when humans disagree
